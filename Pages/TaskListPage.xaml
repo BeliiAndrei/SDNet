@@ -1,0 +1,225 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.TaskListPage"
+             x:DataType="pageModels:TaskListPageModel"
+             x:Name="TaskList"
+             Title="Список задач">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference TaskList}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <ContentPage.Resources>
+        <x:String x:Key="TaskColumnDefinitions">190,105,145,115,200,165,110,180,160,170,300,150,160,180,180,130,160</x:String>
+    </ContentPage.Resources>
+
+    <Grid
+        Padding="{StaticResource LayoutPadding}"
+        RowDefinitions="Auto,Auto,*,Auto"
+        RowSpacing="{StaticResource LayoutSpacing}">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+            <Label Grid.Column="0"
+                   VerticalOptions="Center"
+                   Text="Управление задачами"
+                   Style="{StaticResource Title3}" />
+
+            <Button
+                Grid.Column="1"
+                Text="Обновить"
+                Command="{Binding ApplyFiltersCommand}" />
+
+            <Button
+                Grid.Column="2"
+                WidthRequest="44"
+                HeightRequest="44"
+                Padding="0"
+                CornerRadius="22"
+                Text=""
+                Background="{StaticResource Primary}"
+                ImageSource="{StaticResource IconAdd}"
+                Command="{Binding CreateTaskCommand}"
+                ToolTipProperties.Text="Создать новую задачу"
+                SemanticProperties.Description="Создать"
+                SemanticProperties.Hint="Открыть редактор новой задачи" />
+        </Grid>
+
+        <Border Grid.Row="1" Padding="10,8">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+                <Label Text="Фильтры" Style="{StaticResource Body2Strong}" />
+
+                <ScrollView Grid.Row="1" Orientation="Horizontal">
+                    <HorizontalStackLayout Spacing="8">
+                        <VerticalStackLayout WidthRequest="130">
+                            <Label Text="№ запроса" Style="{StaticResource Caption1}" />
+                            <Entry Text="{Binding QueryIdFilter}" Placeholder="120045" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout WidthRequest="170">
+                            <Label Text="Подразделение" Style="{StaticResource Caption1}" />
+                            <Picker ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout WidthRequest="190">
+                            <Label Text="Тип запроса" Style="{StaticResource Caption1}" />
+                            <Picker ItemsSource="{Binding QueryTypes}" SelectedItem="{Binding SelectedQueryType}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="С даты" Style="{StaticResource Caption1}" />
+                            <DatePicker Date="{Binding DateFrom}" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout WidthRequest="150">
+                            <Label Text="По дату" Style="{StaticResource Caption1}" />
+                            <DatePicker Date="{Binding DateTo}" />
+                        </VerticalStackLayout>
+
+                        <Button Text="Применить"
+                                VerticalOptions="End"
+                                Command="{Binding ApplyFiltersCommand}" />
+
+                        <Button Text="Сбросить"
+                                VerticalOptions="End"
+                                Command="{Binding ResetFiltersCommand}" />
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Padding="0">
+            <Grid RowDefinitions="Auto,*" RowSpacing="0">
+                <Grid
+                    Grid.Row="0"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSecondaryBackground}, Dark={StaticResource DarkSecondaryBackground}}"
+                    Padding="14,10">
+                    <Label Text="Список задач" Style="{StaticResource Body1Strong}" />
+                </Grid>
+
+                <ScrollView Grid.Row="1" Orientation="Horizontal">
+                    <Grid
+                        WidthRequest="{Binding TableWidth}"
+                        RowDefinitions="Auto,Auto,*"
+                        RowSpacing="0">
+
+                        <Grid
+                            Grid.Row="0"
+                            ColumnDefinitions="{StaticResource TaskColumnDefinitions}"
+                            BackgroundColor="{StaticResource Primary}">
+                            <Label Grid.Column="0" Text="Действия" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="1" Grid.ColumnSpan="3" Text="Регистрация" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="4" Grid.ColumnSpan="2" Text="Заявитель" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="6" Grid.ColumnSpan="4" Text="Классификация" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="10" Grid.ColumnSpan="2" Text="Содержание" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="12" Grid.ColumnSpan="4" Text="Исполнение" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                            <Label Grid.Column="16" Text="Закрытие" HorizontalTextAlignment="Center" Padding="8" TextColor="White" />
+                        </Grid>
+
+                        <Grid
+                            Grid.Row="1"
+                            ColumnDefinitions="{StaticResource TaskColumnDefinitions}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}">
+                            <Label Grid.Column="0" Text="" Padding="5" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="1" Text="№ запроса" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="2" Text="Дата рег." Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="3" Text="Приоритет" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="4" Text="Пользователь" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="5" Text="Подразделение" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="6" Text="Тег" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="7" Text="Тип запроса" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="8" Text="IT-проект" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="9" Text="Тип задачи" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="10" Text="Краткое описание" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="11" Text="Состояние" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="12" Text="Срок закрытия" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="13" Text="Исполнитель" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="14" Text="Отдел исполнителя" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="15" Text="% выполнения" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                            <Label Grid.Column="16" Text="Дата закрытия" Padding="8,6" Style="{StaticResource Caption1Strong}" />
+                        </Grid>
+
+                        <CollectionView
+                            x:Name="TasksCollectionView"
+                            Grid.Row="2"
+                            ItemsSource="{Binding FilteredTasks}"
+                            SelectedItem="{Binding SelectedTask}"
+                            SelectionMode="Single"
+                            VerticalOptions="FillAndExpand">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:SDTask">
+                                    <Border StrokeThickness="0,0,0,1"
+                                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                            Padding="0">
+                                        <Grid ColumnDefinitions="{StaticResource TaskColumnDefinitions}" ColumnSpacing="0">
+                                            <Grid.GestureRecognizers>
+                                                <TapGestureRecognizer NumberOfTapsRequired="2"
+                                                                      Command="{Binding EditTaskCommand, Source={RelativeSource AncestorType={x:Type pageModels:TaskListPageModel}}, x:DataType=pageModels:TaskListPageModel}"
+                                                                      CommandParameter="{Binding .}" />
+                                            </Grid.GestureRecognizers>
+
+                                            <HorizontalStackLayout Grid.Column="0"
+                                                                   Spacing="6"
+                                                                   Padding="6,4"
+                                                                   HorizontalOptions="Center"
+                                                                   VerticalOptions="Center">
+                                                <Button Text="Копия"
+                                                        FontSize="12"
+                                                        Padding="8,4"
+                                                        Command="{Binding CloneTaskCommand, Source={RelativeSource AncestorType={x:Type pageModels:TaskListPageModel}}, x:DataType=pageModels:TaskListPageModel}"
+                                                        CommandParameter="{Binding .}" />
+                                                <Button Text="Ред."
+                                                        FontSize="12"
+                                                        Padding="8,4"
+                                                        Command="{Binding EditTaskCommand, Source={RelativeSource AncestorType={x:Type pageModels:TaskListPageModel}}, x:DataType=pageModels:TaskListPageModel}"
+                                                        CommandParameter="{Binding .}" />
+                                            </HorizontalStackLayout>
+
+                                            <Label Grid.Column="1" Text="{Binding UserQueryId}" Padding="8,6" />
+                                            <Label Grid.Column="2" Text="{Binding DateReg, StringFormat='{0:dd.MM.yyyy HH:mm}'}" Padding="8,6" />
+                                            <Label Grid.Column="3" Text="{Binding Priority}" Padding="8,6" />
+                                            <Label Grid.Column="4" Text="{Binding UserFio}" Padding="8,6" />
+                                            <Label Grid.Column="5" Text="{Binding UserDepartName}" Padding="8,6" />
+                                            <Label Grid.Column="6" Text="{Binding UserQueryTag}" Padding="8,6" />
+                                            <Label Grid.Column="7" Text="{Binding QueryTypeName}" Padding="8,6" />
+                                            <Label Grid.Column="8" Text="{Binding ItProjectName}" Padding="8,6" />
+                                            <Label Grid.Column="9" Text="{Binding TaskTypeName}" Padding="8,6" />
+                                            <Label Grid.Column="10" Text="{Binding ShortDescription}" Padding="8,6" MaxLines="1" LineBreakMode="TailTruncation" />
+                                            <Label Grid.Column="11" Text="{Binding StateName}" Padding="8,6" />
+                                            <Label Grid.Column="12" Text="{Binding DateNeedClose, StringFormat='{0:dd.MM.yyyy}'}" Padding="8,6" />
+                                            <Label Grid.Column="13" Text="{Binding PerformerName}" Padding="8,6" />
+                                            <Label Grid.Column="14" Text="{Binding PerformerDepartName}" Padding="8,6" />
+                                            <Label Grid.Column="15" Text="{Binding PerformPercent, StringFormat='{0}%'}" Padding="8,6" />
+                                            <Label Grid.Column="16" Text="{Binding DateClosed, StringFormat='{0:dd.MM.yyyy}'}" Padding="8,6" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </ScrollView>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                <Label
+                    Grid.Column="0"
+                    VerticalOptions="Center"
+                    Text="{Binding FooterSummary}"
+                    Style="{StaticResource Body2Strong}" />
+                <Label
+                    Grid.Column="1"
+                    VerticalOptions="Center"
+                    Text="{Binding LastUpdatedAt, StringFormat='Обновлено: {0:dd.MM.yyyy HH:mm:ss}'}"
+                    Style="{StaticResource Caption1}" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

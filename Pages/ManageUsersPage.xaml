@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.ManageUsersPage"
+             x:DataType="pageModels:ManageUsersPageModel"
+             x:Name="ManageUsersRoot"
+             Title="Пользователи">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference ManageUsersRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid Padding="{StaticResource LayoutPadding}" ColumnDefinitions="1.1*,1.4*" ColumnSpacing="{StaticResource LayoutSpacing}">
+        <Border Grid.Column="0">
+            <VerticalStackLayout Spacing="{StaticResource size120}">
+                <Label Text="Список пользователей" Style="{StaticResource Body1Strong}" />
+                <CollectionView ItemsSource="{Binding Users}" SelectionMode="Single" SelectedItem="{Binding SelectedUser}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:UserInfo">
+                            <Border Padding="10" StrokeThickness="0,0,0,1" Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding UserFullName}" Style="{StaticResource Body2Strong}" />
+                                    <Label Text="{Binding UserName, StringFormat='Логин: {0}'}" Style="{StaticResource Caption1}" />
+                                    <Label Text="{Binding UserRoleName, StringFormat='Роль: {0}'}" Style="{StaticResource Caption1}" />
+                                    <Label Text="{Binding UserDepartName, StringFormat='Департамент: {0}'}" Style="{StaticResource Caption1}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Column="1">
+            <VerticalStackLayout Spacing="{StaticResource size120}">
+                <Label Text="Добавить / редактировать" Style="{StaticResource Body1Strong}" />
+
+                <Label Text="Логин" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding Login}" />
+
+                <Label Text="ФИО" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding UserFullName}" />
+
+                <Label Text="Роль" Style="{StaticResource Caption1}" />
+                <Picker ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}" />
+
+                <Label Text="Департамент" Style="{StaticResource Caption1}" />
+                <Picker ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}" />
+
+                <Label Text="Email" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding Email}" />
+
+                <Label Text="Телефон" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding PhoneNumber}" />
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <Switch Grid.Column="0" IsToggled="{Binding IsActive}" />
+                    <Label Grid.Column="1" VerticalOptions="Center" Text="Активный пользователь" />
+                </Grid>
+
+                <Label Text="{Binding StatusMessage}" TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <Button Grid.Column="0" Text="Новый" Command="{Binding NewUserCommand}" />
+                    <Button Grid.Column="1" Text="Сохранить" Command="{Binding SaveUserCommand}" />
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

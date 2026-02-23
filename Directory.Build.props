@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Android AAPT can fail on non-ASCII project paths.
+    Keep obj/bin under an ASCII-only directory and use identical paths
+    for every target framework so NuGet restore stays consistent.
+  -->
+  <PropertyGroup>
+    <SdNetBuildRoot Condition="'$(SdNetBuildRoot)' == ''">$(UserProfile)\.sdnetbuild\SDNet\</SdNetBuildRoot>
+    <BaseIntermediateOutputPath>$(SdNetBuildRoot)obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <BaseOutputPath>$(SdNetBuildRoot)bin\</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)\obj\**;$(MSBuildProjectDirectory)\bin\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

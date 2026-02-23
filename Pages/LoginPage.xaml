@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             x:Class="SDNet.Pages.LoginPage"
+             x:DataType="pageModels:LoginPageModel"
+             Title="Авторизация">
+
+    <Grid Padding="{StaticResource LayoutPadding}">
+        <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}" VerticalOptions="Center">
+            <Label Text="SDNet" Style="{StaticResource Title1}" HorizontalOptions="Center" />
+            <Label Text="Вход в систему" Style="{StaticResource Body1Strong}" HorizontalOptions="Center" />
+
+            <Border>
+                <VerticalStackLayout Spacing="{StaticResource size120}">
+                    <Label Text="Логин" Style="{StaticResource Caption1}" />
+                    <Entry Text="{Binding Login}" Placeholder="Введите логин" />
+
+                    <Label Text="Пароль" Style="{StaticResource Caption1}" />
+                    <Entry Text="{Binding Password}" IsPassword="True" Placeholder="Введите пароль" />
+
+                    <Label Text="SQL Server" Style="{StaticResource Caption1}" />
+                    <Entry Text="{Binding SqlServer}" Placeholder="localhost" />
+
+                    <Label Text="База данных" Style="{StaticResource Caption1}" />
+                    <Entry Text="{Binding SqlDatabase}" Placeholder="SDNet" />
+
+                    <Label Text="{Binding ErrorMessage}" TextColor="Tomato" />
+
+                    <Button Text="Войти" Command="{Binding SignInCommand}" />
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Margin="0" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

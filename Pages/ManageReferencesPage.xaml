@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.ManageReferencesPage"
+             x:DataType="pageModels:ManageReferencesPageModel"
+             x:Name="ManageReferencesRoot"
+             Title="Справочники">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference ManageReferencesRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid Padding="{StaticResource LayoutPadding}" ColumnDefinitions="1.2*,1*" ColumnSpacing="{StaticResource LayoutSpacing}">
+        <Border Grid.Column="0">
+            <VerticalStackLayout Spacing="{StaticResource size120}">
+                <Label Text="Справочник" Style="{StaticResource Body1Strong}" />
+                <Picker ItemsSource="{Binding Catalogs}" SelectedItem="{Binding SelectedCatalog}" />
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <Label Grid.Column="0"
+                           VerticalOptions="Center"
+                           Text="Список значений"
+                           Style="{StaticResource Body2Strong}" />
+                    <Button Grid.Column="1"
+                            Text="Обновить"
+                            Command="{Binding ReloadCommand}" />
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding Values}" SelectedItem="{Binding SelectedValue}" SelectionMode="Single">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ReferenceValue">
+                            <Border Padding="10"
+                                    StrokeThickness="0,0,0,1"
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Name}"
+                                           Style="{StaticResource Body2Strong}" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Code}"
+                                           Style="{StaticResource Caption1}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Column="1">
+            <VerticalStackLayout Spacing="{StaticResource size120}">
+                <Label Text="Добавить / удалить" Style="{StaticResource Body1Strong}" />
+
+                <Label Text="Название" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding NewName}" Placeholder="Введите значение" />
+
+                <Label Text="Код (опционально)" Style="{StaticResource Caption1}" />
+                <Entry Text="{Binding NewCode}" Placeholder="Короткий код" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <Button Grid.Column="0"
+                            Text="Сохранить"
+                            Command="{Binding AddValueCommand}" />
+                    <Button Grid.Column="1"
+                            Text="Удалить"
+                            Command="{Binding DeleteSelectedCommand}" />
+                </Grid>
+
+                <Label Text="{Binding StatusMessage}"
+                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

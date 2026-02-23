@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.SettingsPage"
+             x:DataType="pageModels:SettingsPageModel"
+             x:Name="SettingsRoot"
+             Title="Настройки">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference SettingsRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="{StaticResource LayoutPadding}"
+            Spacing="{StaticResource LayoutSpacing}">
+
+            <Border
+                Background="{DynamicResource ThemeSectionBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <VerticalStackLayout Spacing="{StaticResource size80}">
+                    <Label
+                        Text="Параметры пользователя"
+                        Style="{StaticResource Title3}"
+                        TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                    <Label
+                        Text="Все параметры сохраняются в отдельный JSON-файл и применяются при следующем запуске."
+                        Style="{StaticResource Caption1}"
+                        TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeCardBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Сохранять положение таблиц"
+                               Style="{StaticResource Body2Strong}"
+                               TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                        <Label Text="Запоминать позицию и конфигурацию таблиц между сессиями."
+                               Style="{StaticResource Caption1}"
+                               TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding SaveTableLayout}"
+                            OnColor="{DynamicResource ThemeAccentColor}" />
+                </Grid>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeCardBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Тема интерфейса"
+                               Style="{StaticResource Body2Strong}"
+                               TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                        <Label Text="{Binding ThemeCaption, StringFormat='Текущая тема: {0}'}"
+                               Style="{StaticResource Caption1}"
+                               TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding IsDarkTheme}"
+                            OnColor="{DynamicResource ThemeAccentColor}" />
+                </Grid>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeCardBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Компактный режим строк таблицы"
+                               Style="{StaticResource Body2Strong}"
+                               TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                        <Label Text="Уменьшает высоту строк в таблице задач."
+                               Style="{StaticResource Caption1}"
+                               TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding CompactTaskRows}"
+                            OnColor="{DynamicResource ThemeAccentColor}" />
+                </Grid>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeCardBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Подтверждение перед удалением"
+                               Style="{StaticResource Body2Strong}"
+                               TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                        <Label Text="Показывать диалог подтверждения перед удалением задачи."
+                               Style="{StaticResource Caption1}"
+                               TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding ConfirmBeforeDelete}"
+                            OnColor="{DynamicResource ThemeAccentColor}" />
+                </Grid>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeCardBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Локальные уведомления"
+                               Style="{StaticResource Body2Strong}"
+                               TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                        <Label Text="Показывать уведомления о сохранении и важных действиях."
+                               Style="{StaticResource Caption1}"
+                               TextColor="{DynamicResource ThemeSecondaryTextColor}" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding EnableNotifications}"
+                            OnColor="{DynamicResource ThemeAccentColor}" />
+                </Grid>
+            </Border>
+
+            <Border
+                Background="{DynamicResource ThemeSectionBackgroundColor}"
+                Stroke="{DynamicResource ThemeBorderColor}"
+                StrokeThickness="1">
+                <VerticalStackLayout Spacing="{StaticResource size60}">
+                    <Label Text="Файл настроек"
+                           Style="{StaticResource Body2Strong}"
+                           TextColor="{DynamicResource ThemePrimaryTextColor}" />
+                    <Label Text="{Binding SettingsFilePath}"
+                           Style="{StaticResource Caption1}"
+                           TextColor="{DynamicResource ThemeSecondaryTextColor}"
+                           LineBreakMode="CharacterWrap" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="{StaticResource LayoutSpacing}">
+                <Button Grid.Column="0"
+                        Text="Сохранить"
+                        Command="{Binding SaveCommand}" />
+                <Button Grid.Column="1"
+                        Text="По умолчанию"
+                        Command="{Binding RestoreDefaultsCommand}" />
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

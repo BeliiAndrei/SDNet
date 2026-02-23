@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="SDNet.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:sf="clr-namespace:Syncfusion.Maui.Toolkit.SegmentedControl;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:pages="clr-namespace:SDNet.Pages"
+    Shell.FlyoutBehavior="Flyout"
+    Title="SDNet">
+
+    <ShellContent
+        Title="Список задач"
+        Icon="{StaticResource IconProjects}"
+        ContentTemplate="{DataTemplate pages:TaskListPage}"
+        Route="task-list" />
+
+    <ShellContent
+        Title="Settings"
+        Icon="{StaticResource IconSettings}"
+        ContentTemplate="{DataTemplate pages:SettingsPage}"
+        Route="settings" />
+
+    <ShellContent
+        x:Name="AdminUsersShellContent"
+        IsVisible="False"
+        Title="Пользователи"
+        Icon="{StaticResource IconUsers}"
+        ContentTemplate="{DataTemplate pages:ManageUsersPage}"
+        Route="admin-users" />
+
+    <ShellContent
+        x:Name="AdminReferencesShellContent"
+        IsVisible="False"
+        Title="Справочники"
+        Icon="{StaticResource IconSettings}"
+        ContentTemplate="{DataTemplate pages:ManageReferencesPage}"
+        Route="admin-references" />
+
+    <Shell.FlyoutFooter>
+        <Grid Padding="15">
+            <sf:SfSegmentedControl x:Name="ThemeSegmentedControl"
+                                   VerticalOptions="Center"
+                                   HorizontalOptions="Center"
+                                   SelectionChanged="SfSegmentedControl_SelectionChanged"
+                                   SegmentWidth="40"
+                                   SegmentHeight="40">
+                <sf:SfSegmentedControl.ItemsSource>
+                    <x:Array Type="{x:Type sf:SfSegmentItem}">
+                        <sf:SfSegmentItem ImageSource="{StaticResource IconLight}"/>
+                        <sf:SfSegmentItem ImageSource="{StaticResource IconDark}"/>
+                    </x:Array>
+                </sf:SfSegmentedControl.ItemsSource>
+            </sf:SfSegmentedControl>
+        </Grid>
+    </Shell.FlyoutFooter>
+
+</Shell>
