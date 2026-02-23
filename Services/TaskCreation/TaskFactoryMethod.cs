@@ -15,7 +15,7 @@ namespace SDNet.Services.TaskCreation
         {
             if (string.IsNullOrWhiteSpace(taskTypeName))
             {
-                throw new ArgumentException("Task type name must be provided.", nameof(taskTypeName));
+                throw new ArgumentException("Не передан параметр с именем класса", nameof(taskTypeName));
             }
 
             TaskTypeName = taskTypeName;

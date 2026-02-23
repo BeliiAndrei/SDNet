@@ -103,16 +103,6 @@ namespace SDNet.Models
             return this;
         }
 
-        public UserInfoBuilder WithAuthorizedAt(DateTime? authorizedAt)
-        {
-            if (authorizedAt.HasValue)
-            {
-                _user.AuthorizedAt = authorizedAt.Value;
-            }
-
-            return this;
-        }
-
         public UserInfoBuilder WithLastActivityAt(DateTime? lastActivityAt)
         {
             _user.LastActivityAt = lastActivityAt;
