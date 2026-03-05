@@ -6,20 +6,27 @@ namespace SDNet.Services.Auth
 {
     internal static class UserInfoDbMapper
     {
+        private static readonly UserInfoDirector Director = new();
+
         public static UserInfo Map(SqlDataReader reader)
         {
-            return UserInfoBuilder.Create()
-                .WithUserId(reader.AsInt("UserId"))
-                .WithUserFullName(reader.AsString("UserFullName"))
-                .WithUserName(reader.AsString("UserName"))
-                .WithRole(reader.AsInt("UserRoleId"), reader.AsString("UserRoleName"))
-                .WithDepartment(reader.AsInt("UserDepartId"), reader.AsString("UserDepartName"))
-                .WithEmail(reader.AsString("Email"))
-                .WithPhoneNumber(reader.AsString("PhoneNumber"))
-                .WithIsActive(reader.AsBool("IsActive", true))
-                .WithAuthorizedAt(reader.AsDateTime("AuthorizedAt", DateTime.Now))
-                .WithLastActivityAt(reader.AsNullableDateTime("LastActivityAt"))
-                .Build();
+            var data = new UserInfoBuildData
+            {
+                UserId = reader.AsInt("UserId"),
+                UserFullName = reader.AsString("UserFullName"),
+                UserName = reader.AsString("UserName"),
+                UserRoleId = reader.AsInt("UserRoleId"),
+                UserRoleName = reader.AsString("UserRoleName"),
+                UserDepartId = reader.AsInt("UserDepartId"),
+                UserDepartName = reader.AsString("UserDepartName"),
+                Email = reader.AsString("Email"),
+                PhoneNumber = reader.AsString("PhoneNumber"),
+                IsActive = reader.AsBool("IsActive", true),
+                AuthorizedAt = reader.AsDateTime("AuthorizedAt", DateTime.Now),
+                LastActivityAt = reader.AsNullableDateTime("LastActivityAt")
+            };
+
+            return Director.BuildFromDatabase(new DbUserInfoBuilder(), data);
         }
     }
 }

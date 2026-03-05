@@ -9,6 +9,7 @@ namespace SDNet.PageModels
 {
     public partial class ManageUsersPageModel : ObservableObject
     {
+        private static readonly UserInfoDirector UserInfoDirector = new();
         private readonly IUserDirectoryService _userDirectoryService;
         private readonly CurrentUserContext _currentUserContext;
         private readonly ITaskReferenceDataService _taskReferenceDataService;
@@ -136,16 +137,19 @@ namespace SDNet.PageModels
                 return;
             }
 
-            UserInfo user = UserInfoBuilder.Create()
-                .WithUserId(EditUserId)
-                .WithUserName(Login)
-                .WithUserFullName(UserFullName)
-                .WithRoleName(SelectedRole)
-                .WithDepartment(0, SelectedDepartment)
-                .WithEmail(Email)
-                .WithPhoneNumber(PhoneNumber)
-                .WithIsActive(IsActive)
-                .Build();
+            var data = new UserInfoBuildData
+            {
+                UserId = EditUserId,
+                UserName = Login,
+                UserFullName = UserFullName,
+                UserRoleName = SelectedRole,
+                UserDepartName = SelectedDepartment,
+                Email = Email,
+                PhoneNumber = PhoneNumber,
+                IsActive = IsActive
+            };
+
+            UserInfo user = UserInfoDirector.BuildForSave(new UserInfoBuilder(), data);
 
             UserInfo saved = _userDirectoryService.Save(user);
             ReloadUsers();

@@ -8,6 +8,7 @@ namespace SDNet.Services.Auth
     public sealed class SqlUserDirectoryService : IUserDirectoryService
     {
         private const int AdministratorRoleId = 1;
+        private static readonly UserInfoDirector UserInfoDirector = new();
 
         public IReadOnlyList<UserInfo> GetAllUsers()
         {
@@ -97,16 +98,18 @@ namespace SDNet.Services.Auth
                 CommandTimeout = 30
             };
 
-            command.Parameters.Add(new SqlParameter("@UserId", user.UserId > 0 ? user.UserId : DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@Login", DbValue(user.UserName)));
-            command.Parameters.Add(new SqlParameter("@FullName", DbValue(user.UserFullName)));
-            command.Parameters.Add(new SqlParameter("@RoleId", user.UserRoleId > 0 ? user.UserRoleId : DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@RoleName", DbValue(user.UserRoleName)));
-            command.Parameters.Add(new SqlParameter("@DepartId", user.UserDepartId > 0 ? user.UserDepartId : DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@DepartName", DbValue(user.UserDepartName)));
-            command.Parameters.Add(new SqlParameter("@Email", DbValue(user.Email)));
-            command.Parameters.Add(new SqlParameter("@PhoneNumber", DbValue(user.PhoneNumber)));
-            command.Parameters.Add(new SqlParameter("@IsActive", user.IsActive));
+            UserInfo normalized = UserInfoDirector.BuildForSave(new UserInfoBuilder(), UserInfoBuildData.FromUser(user));
+
+            command.Parameters.Add(new SqlParameter("@UserId", normalized.UserId > 0 ? normalized.UserId : DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@Login", DbValue(normalized.UserName)));
+            command.Parameters.Add(new SqlParameter("@FullName", DbValue(normalized.UserFullName)));
+            command.Parameters.Add(new SqlParameter("@RoleId", normalized.UserRoleId > 0 ? normalized.UserRoleId : DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@RoleName", DbValue(normalized.UserRoleName)));
+            command.Parameters.Add(new SqlParameter("@DepartId", normalized.UserDepartId > 0 ? normalized.UserDepartId : DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@DepartName", DbValue(normalized.UserDepartName)));
+            command.Parameters.Add(new SqlParameter("@Email", DbValue(normalized.Email)));
+            command.Parameters.Add(new SqlParameter("@PhoneNumber", DbValue(normalized.PhoneNumber)));
+            command.Parameters.Add(new SqlParameter("@IsActive", normalized.IsActive));
 
             using SqlDataReader reader = command.ExecuteReader();
             if (!reader.Read())
@@ -115,11 +118,6 @@ namespace SDNet.Services.Auth
             }
 
             return MapUser(reader);
-        }
-
-        private static object DbValue(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? DBNull.Value : value.Trim();
         }
 
         private static SqlConnection CreateOpenConnection()
@@ -154,6 +152,11 @@ namespace SDNet.Services.Auth
         {
             return user.UserRoleId == AdministratorRoleId ||
                    string.Equals(user.UserRoleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static object DbValue(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? DBNull.Value : value.Trim();
         }
 
     }
