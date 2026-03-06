@@ -4,8 +4,8 @@ namespace SDNet.Services
 {
     public sealed class CurrentUserContext
     {
-        private static readonly Lazy<CurrentUserContext> _lazyInstance =
-            new(() => new CurrentUserContext(), LazyThreadSafetyMode.ExecutionAndPublication);
+        private static CurrentUserContext? _instance;
+        private static readonly object _instanceLock = new();
 
         private readonly SemaphoreSlim _sync = new(1, 1);
         private IAuthorizationService _authorizationService;
@@ -15,7 +15,27 @@ namespace SDNet.Services
             _authorizationService = new UnconfiguredAuthorizationService();
         }
 
-        public static CurrentUserContext Instance => _lazyInstance.Value;
+        public static CurrentUserContext Instance => GetInstance();
+
+        public static CurrentUserContext GetInstance()
+        {
+            if (_instance is not null)
+            {
+                return _instance;
+            }
+
+            lock (_instanceLock)
+            {
+                _instance ??= new CurrentUserContext();
+                return _instance;
+            }
+        }
+
+        public static void Initialize(IAuthorizationService authorizationService)
+        {
+            CurrentUserContext instance = GetInstance();
+            instance.ConfigureAuthorizationService(authorizationService);
+        }
 
         public UserInfo? CurrentUser { get; private set; }
 

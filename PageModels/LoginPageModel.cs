@@ -52,9 +52,9 @@ namespace SDNet.PageModels
             ErrorMessage = string.Empty;
             try
             {
-                SqlConnectionContext.Instance.Initialize(SqlServer, SqlDatabase, Login);
+                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, Login);
                 UserInfo user = await _currentUserContext.AuthorizeAsync(Login, Password);
-                SqlConnectionContext.Instance.Initialize(SqlServer, SqlDatabase, user.UserName);
+                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, user.UserName);
                 _appNavigationService.RequestOpenShell();
             }
             catch (Exception ex)

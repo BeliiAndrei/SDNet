@@ -52,9 +52,8 @@ namespace SDNet
             builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
             builder.Services.AddSingleton(sp =>
             {
-                var context = CurrentUserContext.Instance;
-                context.ConfigureAuthorizationService(sp.GetRequiredService<IAuthorizationService>());
-                return context;
+                CurrentUserContext.Initialize(sp.GetRequiredService<IAuthorizationService>());
+                return CurrentUserContext.Instance;
             });
             builder.Services.AddSingleton<IUserSettingsService, UserSettingsService>();
             builder.Services.AddSingleton<IThemeService, ThemeService>();

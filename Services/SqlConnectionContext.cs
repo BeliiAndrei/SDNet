@@ -2,8 +2,8 @@ namespace SDNet.Services
 {
     public sealed class SqlConnectionContext
     {
-        private static readonly Lazy<SqlConnectionContext> _lazyInstance =
-            new(() => new SqlConnectionContext(), LazyThreadSafetyMode.ExecutionAndPublication);
+        private static SqlConnectionContext? _instance;
+        private static readonly object _instanceLock = new();
 
         private readonly object _sync = new();
 
@@ -11,7 +11,21 @@ namespace SDNet.Services
         {
         }
 
-        public static SqlConnectionContext Instance => _lazyInstance.Value;
+        public static SqlConnectionContext Instance => GetInstance();
+
+        public static SqlConnectionContext GetInstance()
+        {
+            if (_instance is not null)
+            {
+                return _instance;
+            }
+
+            lock (_instanceLock)
+            {
+                _instance ??= new SqlConnectionContext();
+                return _instance;
+            }
+        }
 
         public string ConnectionString { get; private set; } = string.Empty;
 
@@ -23,7 +37,13 @@ namespace SDNet.Services
 
         public DateTime? CreatedAt { get; private set; }
 
-        public void Initialize(string server, string database, string appUserName)
+        public static void Initialize(string server, string database, string appUserName)
+        {
+            SqlConnectionContext instance = GetInstance();
+            instance.InitializeInternal(server, database, appUserName);
+        }
+
+        private void InitializeInternal(string server, string database, string appUserName)
         {
             lock (_sync)
             {
