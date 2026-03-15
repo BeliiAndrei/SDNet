@@ -52,7 +52,7 @@
         </Grid>
 
         <Border Grid.Row="1" Padding="10,8">
-            <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
                 <Label Text="Фильтры" Style="{StaticResource Body2Strong}" />
 
                 <ScrollView Grid.Row="1" Orientation="Horizontal">
@@ -89,6 +89,38 @@
                         <Button Text="Сбросить"
                                 VerticalOptions="End"
                                 Command="{Binding ResetFiltersCommand}" />
+                    </HorizontalStackLayout>
+                </ScrollView>
+
+                <ScrollView Grid.Row="2" Orientation="Horizontal">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="Экспорт выбранной:"
+                               VerticalOptions="Center"
+                               Style="{StaticResource Caption1Strong}" />
+
+                        <Button Text="Word"
+                                Command="{Binding ExportSelectedTaskWordCommand}" />
+
+                        <Button Text="Excel"
+                                Command="{Binding ExportSelectedTaskExcelCommand}" />
+
+                        <Button Text="PDF"
+                                Command="{Binding ExportSelectedTaskPdfCommand}" />
+
+                        <BoxView WidthRequest="16" Opacity="0" />
+
+                        <Label Text="Экспорт списка:"
+                               VerticalOptions="Center"
+                               Style="{StaticResource Caption1Strong}" />
+
+                        <Button Text="Word"
+                                Command="{Binding ExportTaskListWordCommand}" />
+
+                        <Button Text="Excel"
+                                Command="{Binding ExportTaskListExcelCommand}" />
+
+                        <Button Text="PDF"
+                                Command="{Binding ExportTaskListPdfCommand}" />
                     </HorizontalStackLayout>
                 </ScrollView>
             </Grid>

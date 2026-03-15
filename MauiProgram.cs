@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using SDNet.Services.Auth;
+using SDNet.Services.Export;
 using SDNet.Services.Navigation;
 using SDNet.Services.TaskCreation;
 using SDNet.Services.Theming;
@@ -46,6 +47,7 @@ namespace SDNet
 
             builder.Services.AddSingleton<ISDTaskStore, SqlSDTaskStore>();
             builder.Services.AddSingleton<ITaskReferenceDataService, SqlTaskReferenceDataService>();
+            builder.Services.AddSingleton<ITaskExportService, TaskExportBridgeService>();
             builder.Services.AddSingleton<IReferenceCatalogAdminService, SqlReferenceCatalogAdminService>();
             builder.Services.AddSingleton<IUserDirectoryService, SqlUserDirectoryService>();
             builder.Services.AddSingleton<IAuthorizationService, SqlAuthorizationService>();

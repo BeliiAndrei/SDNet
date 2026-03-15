@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using SDNet.Data;
 using SDNet.Models;
 using SDNet.Services;
+using SDNet.Services.Export;
 
 namespace SDNet.PageModels
 {
@@ -14,6 +15,7 @@ namespace SDNet.PageModels
         private readonly ISDTaskStore _taskStore;
         private readonly CurrentUserContext _currentUserContext;
         private readonly ITaskReferenceDataService _taskReferenceDataService;
+        private readonly ITaskExportService _taskExportService;
         private Guid? _pendingFocusId;
 
         public ObservableCollection<string> Departments { get; } = [];
@@ -70,11 +72,13 @@ namespace SDNet.PageModels
         public TaskListPageModel(
             ISDTaskStore taskStore,
             CurrentUserContext currentUserContext,
-            ITaskReferenceDataService taskReferenceDataService)
+            ITaskReferenceDataService taskReferenceDataService,
+            ITaskExportService taskExportService)
         {
             _taskStore = taskStore;
             _currentUserContext = currentUserContext;
             _taskReferenceDataService = taskReferenceDataService;
+            _taskExportService = taskExportService;
 
             LoadFilterOptions();
             ApplyFiltersCore();
@@ -142,6 +146,24 @@ namespace SDNet.PageModels
         {
             return Shell.Current.GoToAsync($"sdtask-edit?id={task.Id}");
         }
+
+        [RelayCommand]
+        private Task ExportSelectedTaskWord() => ExportSelectedTaskAsync(ExportFormat.Word);
+
+        [RelayCommand]
+        private Task ExportSelectedTaskExcel() => ExportSelectedTaskAsync(ExportFormat.Excel);
+
+        [RelayCommand]
+        private Task ExportSelectedTaskPdf() => ExportSelectedTaskAsync(ExportFormat.Pdf);
+
+        [RelayCommand]
+        private Task ExportTaskListWord() => ExportTaskListAsync(ExportFormat.Word);
+
+        [RelayCommand]
+        private Task ExportTaskListExcel() => ExportTaskListAsync(ExportFormat.Excel);
+
+        [RelayCommand]
+        private Task ExportTaskListPdf() => ExportTaskListAsync(ExportFormat.Pdf);
 
         private void ApplyFiltersCore()
         {
@@ -258,6 +280,39 @@ namespace SDNet.PageModels
             ClosedCount = tasks.Count(t => t.DateClosed.HasValue);
             InWorkCount = tasks.Count(t => !t.DateClosed.HasValue);
             OverdueCount = tasks.Count(t => !t.DateClosed.HasValue && t.DateNeedClose.Date < today);
+        }
+
+        private async Task ExportSelectedTaskAsync(ExportFormat format)
+        {
+            if (SelectedTask is null)
+            {
+                await AppShell.DisplaySnackbarAsync("Сначала выберите задачу для экспорта.");
+                return;
+            }
+
+            string outputPath = await _taskExportService.ExportSingleTaskAsync(
+                format,
+                SelectedTask,
+                _currentUserContext.CurrentUser);
+
+            await AppShell.DisplaySnackbarAsync($"Файл сохранен: {outputPath}");
+        }
+
+        private async Task ExportTaskListAsync(ExportFormat format)
+        {
+            List<SDTask> tasks = FilteredTasks.ToList();
+            if (tasks.Count == 0)
+            {
+                await AppShell.DisplaySnackbarAsync("Нет задач для экспорта по текущим фильтрам.");
+                return;
+            }
+
+            string outputPath = await _taskExportService.ExportTaskListAsync(
+                format,
+                tasks,
+                _currentUserContext.CurrentUser);
+
+            await AppShell.DisplaySnackbarAsync($"Файл сохранен: {outputPath}");
         }
 
         private static bool IsAdministrator(UserInfo user)
