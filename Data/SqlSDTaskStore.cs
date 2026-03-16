@@ -5,6 +5,7 @@ using SDNet.Models;
 using SDNEt.BDParser;
 using SDNet.Services;
 using SDNet.Services.TaskCreation;
+using SDNet.Services.TaskStatusAudit;
 
 namespace SDNet.Data
 {
@@ -12,10 +13,14 @@ namespace SDNet.Data
     {
         private const int DefaultStartQueryId = 120001;
         private readonly ISDTaskFactoryMethodService _taskFactoryMethodService;
+        private readonly TaskStatusChangeAuditComponent _taskStatusChangeAuditComponent;
 
-        public SqlSDTaskStore(ISDTaskFactoryMethodService taskFactoryMethodService)
+        public SqlSDTaskStore(
+            ISDTaskFactoryMethodService taskFactoryMethodService,
+            TaskStatusChangeAuditComponent taskStatusChangeAuditComponent)
         {
             _taskFactoryMethodService = taskFactoryMethodService;
+            _taskStatusChangeAuditComponent = taskStatusChangeAuditComponent;
         }
 
         public IReadOnlyList<SDTask> GetAll()
@@ -133,6 +138,7 @@ namespace SDNet.Data
         public void Save(SDTask task)
         {
             ArgumentNullException.ThrowIfNull(task);
+            SDTask? existingTask = task.Id == Guid.Empty ? null : GetById(task.Id);
 
             using var connection = CreateOpenConnection();
             using var command = new SqlCommand("dbo.sp_SDTask_Upsert", connection)
@@ -182,6 +188,18 @@ namespace SDNet.Data
             else
             {
                 task.UserQueryId = task.UserQueryId <= 0 ? PeekNextUserQueryId() : task.UserQueryId;
+            }
+
+            if (existingTask is not null &&
+                !string.Equals(existingTask.StateName, task.StateName, StringComparison.OrdinalIgnoreCase))
+            {
+                _taskStatusChangeAuditComponent.Save(new TaskStatusChangeAuditRecord
+                {
+                    TaskId = task.Id,
+                    UserQueryId = task.UserQueryId,
+                    OldStateName = existingTask.StateName,
+                    NewStateName = task.StateName
+                });
             }
         }
 

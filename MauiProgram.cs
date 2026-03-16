@@ -4,6 +4,7 @@ using SDNet.Services.Auth;
 using SDNet.Services.Export;
 using SDNet.Services.Navigation;
 using SDNet.Services.TaskCreation;
+using SDNet.Services.TaskStatusAudit;
 using SDNet.Services.Theming;
 using Syncfusion.Maui.Toolkit.Hosting;
 
@@ -45,6 +46,13 @@ namespace SDNet
             builder.Services.AddSingleton<SDTaskCreator, IntegrationTaskCreator>();
             builder.Services.AddSingleton<ISDTaskFactoryMethodService, SDTaskFactoryMethodService>();
 
+            builder.Services.AddSingleton<SqlTaskStatusChangeAuditComponent>();
+            builder.Services.AddSingleton<TaskStatusChangeAuditComponent>(sp =>
+                new SafeTaskStatusChangeAuditDecorator(
+                    new UserContextTaskStatusChangeAuditDecorator(
+                        sp.GetRequiredService<SqlTaskStatusChangeAuditComponent>(),
+                        sp.GetRequiredService<CurrentUserContext>())));
+            builder.Services.AddSingleton<ITaskStatusChangeHistoryService, SqlTaskStatusChangeHistoryService>();
             builder.Services.AddSingleton<ISDTaskStore, SqlSDTaskStore>();
             builder.Services.AddSingleton<ITaskReferenceDataService, SqlTaskReferenceDataService>();
             builder.Services.AddSingleton<ITaskExportService, TaskExportBridgeService>();
@@ -67,7 +75,9 @@ namespace SDNet
             builder.Services.AddSingleton<SettingsPageModel>();
             builder.Services.AddSingleton<ManageUsersPageModel>();
             builder.Services.AddSingleton<ManageReferencesPageModel>();
+            builder.Services.AddSingleton<TaskStatusHistoryPageModel>();
             builder.Services.AddSingleton<ManageReferencesPage>();
+            builder.Services.AddSingleton<TaskStatusHistoryPage>();
             builder.Services.AddTransient<TaskEditorPageModel>();
 
             builder.Services.AddTransientWithShellRoute<TaskEditorPage, TaskEditorPageModel>("sdtask-edit");

@@ -36,6 +36,14 @@
         ContentTemplate="{DataTemplate pages:ManageReferencesPage}"
         Route="admin-references" />
 
+    <ShellContent
+        x:Name="AdminTaskHistoryShellContent"
+        IsVisible="False"
+        Title="История статусов"
+        Icon="{StaticResource IconMeta}"
+        ContentTemplate="{DataTemplate pages:TaskStatusHistoryPage}"
+        Route="admin-task-history" />
+
     <Shell.FlyoutFooter>
         <Grid Padding="15">
             <sf:SfSegmentedControl x:Name="ThemeSegmentedControl"

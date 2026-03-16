@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.TaskStatusHistoryPage"
+             x:DataType="pageModels:TaskStatusHistoryPageModel"
+             x:Name="TaskStatusHistoryRoot"
+             Title="История статусов">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference TaskStatusHistoryRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid Padding="{StaticResource LayoutPadding}"
+          RowDefinitions="Auto,*,Auto"
+          RowSpacing="{StaticResource LayoutSpacing}">
+        <Border Grid.Row="0">
+            <VerticalStackLayout Spacing="{StaticResource size120}">
+                <Label Text="История изменений статусов" Style="{StaticResource Body1Strong}" />
+
+                <ScrollView Orientation="Horizontal">
+                    <HorizontalStackLayout Spacing="{StaticResource LayoutSpacing}">
+                        <VerticalStackLayout WidthRequest="180">
+                            <Label Text="№ задачи" Style="{StaticResource Caption1}" />
+                            <Entry Text="{Binding TaskCodeFilter}" Placeholder="120045" />
+                        </VerticalStackLayout>
+
+                        <Button Text="Применить"
+                                VerticalOptions="End"
+                                Command="{Binding ApplyFilterCommand}" />
+
+                        <Button Text="Сбросить"
+                                VerticalOptions="End"
+                                Command="{Binding ResetFilterCommand}" />
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Row="1">
+            <Grid RowDefinitions="Auto,*" RowSpacing="0">
+                <Grid BackgroundColor="{StaticResource Primary}"
+                      ColumnDefinitions="130,170,170,220,200">
+                    <Label Grid.Column="0" Text="№ задачи" Padding="10,8" TextColor="White" />
+                    <Label Grid.Column="1" Text="Старый статус" Padding="10,8" TextColor="White" />
+                    <Label Grid.Column="2" Text="Новый статус" Padding="10,8" TextColor="White" />
+                    <Label Grid.Column="3" Text="Изменил" Padding="10,8" TextColor="White" />
+                    <Label Grid.Column="4" Text="Дата изменения" Padding="10,8" TextColor="White" />
+                </Grid>
+
+                <CollectionView Grid.Row="1"
+                                ItemsSource="{Binding HistoryItems}"
+                                SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <Grid Padding="24">
+                            <Label Text="Нет записей для отображения."
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"
+                                   Style="{StaticResource Body2}" />
+                        </Grid>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:TaskStatusChangeHistoryItem">
+                            <Border Padding="0"
+                                    StrokeThickness="0,0,0,1"
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}">
+                                <Grid ColumnDefinitions="130,170,170,220,200">
+                                    <Label Grid.Column="0" Text="{Binding UserQueryId}" Padding="10,8" />
+                                    <Label Grid.Column="1" Text="{Binding OldStateName}" Padding="10,8" />
+                                    <Label Grid.Column="2" Text="{Binding NewStateName}" Padding="10,8" />
+                                    <VerticalStackLayout Grid.Column="3" Padding="10,8" Spacing="2">
+                                        <Label Text="{Binding ChangedByName}" Style="{StaticResource Body2Strong}" />
+                                        <Label Text="{Binding ChangedByLogin}" Style="{StaticResource Caption1}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="4"
+                                           Text="{Binding ChangedAt, StringFormat='{0:dd.MM.yyyy HH:mm}'}"
+                                           Padding="10,8" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </Border>
+
+        <Label Grid.Row="2"
+               Text="{Binding StatusMessage}"
+               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
+    </Grid>
+</ContentPage>

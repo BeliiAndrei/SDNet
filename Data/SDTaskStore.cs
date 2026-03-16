@@ -1,5 +1,6 @@
 using SDNet.Models;
 using SDNet.Services.TaskCreation;
+using SDNet.Services.TaskStatusAudit;
 
 namespace SDNet.Data
 {
@@ -8,10 +9,14 @@ namespace SDNet.Data
         private readonly object _lock = new();
         private readonly List<SDTask> _tasks = [];
         private readonly ISDTaskFactoryMethodService _taskFactoryMethodService;
+        private readonly TaskStatusChangeAuditComponent _taskStatusChangeAuditComponent;
 
-        public SDTaskStore(ISDTaskFactoryMethodService taskFactoryMethodService)
+        public SDTaskStore(
+            ISDTaskFactoryMethodService taskFactoryMethodService,
+            TaskStatusChangeAuditComponent taskStatusChangeAuditComponent)
         {
             _taskFactoryMethodService = taskFactoryMethodService;
+            _taskStatusChangeAuditComponent = taskStatusChangeAuditComponent;
         }
 
         public IReadOnlyList<SDTask> GetAll()
@@ -101,8 +106,12 @@ namespace SDNet.Data
 
         public void Save(SDTask task)
         {
+            TaskStatusChangeAuditRecord? auditRecord = null;
+
             lock (_lock)
             {
+                SDTask? existingTask = _tasks.FirstOrDefault(t => t.Id == task.Id);
+
                 if (task.Id == Guid.Empty)
                 {
                     task.Id = Guid.NewGuid();
@@ -127,6 +136,23 @@ namespace SDNet.Data
                 {
                     _tasks.Add(task);
                 }
+
+                if (existingTask is not null &&
+                    !string.Equals(existingTask.StateName, task.StateName, StringComparison.OrdinalIgnoreCase))
+                {
+                    auditRecord = new TaskStatusChangeAuditRecord
+                    {
+                        TaskId = task.Id,
+                        UserQueryId = task.UserQueryId,
+                        OldStateName = existingTask.StateName,
+                        NewStateName = task.StateName
+                    };
+                }
+            }
+
+            if (auditRecord is not null)
+            {
+                _taskStatusChangeAuditComponent.Save(auditRecord);
             }
         }
 

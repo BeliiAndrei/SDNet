@@ -108,6 +108,7 @@ namespace SDNet
 
             AdminUsersShellContent.IsVisible = isAdmin;
             AdminReferencesShellContent.IsVisible = isAdmin;
+            AdminTaskHistoryShellContent.IsVisible = isAdmin;
         }
     }
 }
