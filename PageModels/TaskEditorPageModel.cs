@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SDNet.Data;
 using SDNet.Models;
+using SDNet.Models.ServiceProfiles;
 using SDNet.Services;
 using SDNet.Services.Auth;
+using SDNet.Services.ServiceProfiles;
 using SDNet.Services.TaskCreation;
 
 namespace SDNet.PageModels
@@ -18,7 +20,9 @@ namespace SDNet.PageModels
         private readonly IUserDirectoryService _userDirectoryService;
         private readonly ITaskReferenceDataService _taskReferenceDataService;
         private readonly ISDTaskFactoryMethodService _taskFactoryMethodService;
+        private readonly IServiceProfileFlyweightFactory _serviceProfileFlyweightFactory;
         private Guid _taskId;
+        private bool _isSyncingServiceProfileSelection;
 
         public IReadOnlyList<string> TaskTypes => _taskFactoryMethodService.SupportedTaskTypes;
         public IReadOnlyList<string> Priorities { get; } = ["Низкий", "Средний", "Высокий", "Критичный"];
@@ -27,6 +31,7 @@ namespace SDNet.PageModels
         public ObservableCollection<string> DepartmentOptions { get; } = [];
         public ObservableCollection<string> QueryTypeOptions { get; } = [];
         public ObservableCollection<string> ItProjectOptions { get; } = [];
+        public ObservableCollection<ServiceProfileOption> ServiceProfileOptions { get; } = [];
 
         [ObservableProperty]
         private bool _isExistingTask;
@@ -66,6 +71,9 @@ namespace SDNet.PageModels
 
         [ObservableProperty]
         private string _shortDescription = string.Empty;
+
+        [ObservableProperty]
+        private ServiceProfileOption? _selectedServiceProfile;
 
         [ObservableProperty]
         private string _stateName = "Новая";
@@ -138,13 +146,15 @@ namespace SDNet.PageModels
             CurrentUserContext currentUserContext,
             IUserDirectoryService userDirectoryService,
             ITaskReferenceDataService taskReferenceDataService,
-            ISDTaskFactoryMethodService taskFactoryMethodService)
+            ISDTaskFactoryMethodService taskFactoryMethodService,
+            IServiceProfileFlyweightFactory serviceProfileFlyweightFactory)
         {
             _taskStore = taskStore;
             _currentUserContext = currentUserContext;
             _userDirectoryService = userDirectoryService;
             _taskReferenceDataService = taskReferenceDataService;
             _taskFactoryMethodService = taskFactoryMethodService;
+            _serviceProfileFlyweightFactory = serviceProfileFlyweightFactory;
             FillDefaults();
         }
 
@@ -168,16 +178,36 @@ namespace SDNet.PageModels
             }
         }
 
+        partial void OnSelectedServiceProfileChanged(ServiceProfileOption? value)
+        {
+            if (_isSyncingServiceProfileSelection || value?.Id is null)
+            {
+                return;
+            }
+
+            IServiceProfileFlyweight? flyweight = _serviceProfileFlyweightFactory.GetById(value.Id);
+            if (flyweight is null)
+            {
+                return;
+            }
+
+            ServiceProfileTaskContext context = CaptureServiceProfileContext();
+            flyweight.ApplyTo(context);
+            ApplyServiceProfileContext(context);
+        }
+
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             bool isNew = query.TryGetValue("isNew", out var isNewValue) &&
                          bool.TryParse(isNewValue?.ToString(), out var parsed) &&
                          parsed;
+            int? requestedServiceProfileId = TryParseServiceProfileId(query);
 
             if (isNew)
             {
                 IsExistingTask = false;
                 FillDefaults();
+                SetSelectedServiceProfile(requestedServiceProfileId, applyProfile: true);
                 return;
             }
 
@@ -263,6 +293,7 @@ namespace SDNet.PageModels
             task.PerformerDepartName = selectedPerformerUser?.UserDepartName ?? PerformerDepartName;
             task.PerformPercent = (int)Math.Round(PerformPercent);
             task.DateClosed = StateName == "Закрыта" ? DateClosed : null;
+            task.ServiceProfileId = SelectedServiceProfile?.Id;
 
             ApplyTypeSpecific(task);
             _taskStore.Save(task);
@@ -296,6 +327,7 @@ namespace SDNet.PageModels
             _taskId = Guid.Empty;
             UserInfo? currentUser = _currentUserContext.CurrentUser;
             LoadReferenceOptions();
+            LoadServiceProfileOptions();
             EnsureOption(DepartmentOptions, currentUser?.UserDepartName);
 
             SelectedTaskType = SDTaskTypes.ITTask;
@@ -338,11 +370,14 @@ namespace SDNet.PageModels
             {
                 SelectedPerformer = PerformerOptions.FirstOrDefault() ?? "Не назначен";
             }
+
+            SetSelectedServiceProfile(null);
         }
 
         private void FillFromTask(SDTask task)
         {
             LoadReferenceOptions();
+            LoadServiceProfileOptions();
             SelectedTaskType = task.TaskTypeName;
             UserQueryId = task.UserQueryId;
             DateReg = task.DateReg;
@@ -409,6 +444,7 @@ namespace SDNet.PageModels
                                     string.Equals(p, task.PerformerName, StringComparison.OrdinalIgnoreCase))
                                ?? PerformerOptions.FirstOrDefault()
                                ?? task.PerformerName;
+            SetSelectedServiceProfile(task.ServiceProfileId);
         }
 
         private void LoadReferenceOptions()
@@ -476,6 +512,95 @@ namespace SDNet.PageModels
             {
                 PerformerOptions.Add("Не назначен");
             }
+        }
+
+        private void LoadServiceProfileOptions()
+        {
+            int? previousProfileId = SelectedServiceProfile?.Id;
+
+            ServiceProfileOptions.Clear();
+            ServiceProfileOptions.Add(new ServiceProfileOption
+            {
+                Id = null,
+                DisplayName = "Без профиля услуги"
+            });
+
+            foreach (IServiceProfileFlyweight profile in _serviceProfileFlyweightFactory.GetAll())
+            {
+                ServiceProfileOptions.Add(new ServiceProfileOption
+                {
+                    Id = profile.Id,
+                    DisplayName = $"{profile.ServiceName} [{profile.ServiceCode}]"
+                });
+            }
+
+            SetSelectedServiceProfile(previousProfileId);
+        }
+
+        private void SetSelectedServiceProfile(int? serviceProfileId, bool applyProfile = false)
+        {
+            _isSyncingServiceProfileSelection = true;
+            SelectedServiceProfile = ServiceProfileOptions.FirstOrDefault(option => option.Id == serviceProfileId)
+                                     ?? ServiceProfileOptions.FirstOrDefault(option => option.Id is null);
+            _isSyncingServiceProfileSelection = false;
+
+            if (applyProfile &&
+                serviceProfileId.HasValue &&
+                SelectedServiceProfile?.Id == serviceProfileId)
+            {
+                OnSelectedServiceProfileChanged(SelectedServiceProfile);
+            }
+        }
+
+        private ServiceProfileTaskContext CaptureServiceProfileContext()
+        {
+            return new ServiceProfileTaskContext
+            {
+                SelectedTaskType = SelectedTaskType,
+                Priority = Priority,
+                QueryTypeName = QueryTypeName,
+                ItProjectName = ItProjectName,
+                UserQueryTag = UserQueryTag,
+                PerformerDepartName = PerformerDepartName,
+                ShortDescription = ShortDescription,
+                DateReg = DateReg,
+                DateNeedClose = DateNeedClose
+            };
+        }
+
+        private void ApplyServiceProfileContext(ServiceProfileTaskContext context)
+        {
+            EnsureOption(QueryTypeOptions, context.QueryTypeName);
+            EnsureOption(ItProjectOptions, context.ItProjectName);
+            EnsureOption(DepartmentOptions, context.PerformerDepartName);
+
+            if (!string.IsNullOrWhiteSpace(context.SelectedTaskType) &&
+                TaskTypes.Contains(context.SelectedTaskType))
+            {
+                SelectedTaskType = context.SelectedTaskType;
+            }
+
+            if (!string.IsNullOrWhiteSpace(context.Priority) &&
+                Priorities.Contains(context.Priority))
+            {
+                Priority = context.Priority;
+            }
+
+            QueryTypeName = context.QueryTypeName;
+            ItProjectName = context.ItProjectName;
+            UserQueryTag = context.UserQueryTag;
+            PerformerDepartName = context.PerformerDepartName;
+            ShortDescription = context.ShortDescription;
+            DateNeedClose = context.DateNeedClose;
+        }
+
+        private static int? TryParseServiceProfileId(IDictionary<string, object> query)
+        {
+            return query.TryGetValue("serviceProfileId", out var value) &&
+                   int.TryParse(value?.ToString(), out int parsedId) &&
+                   parsedId > 0
+                ? parsedId
+                : null;
         }
 
         private bool CanAccessDepartment(string departmentName)

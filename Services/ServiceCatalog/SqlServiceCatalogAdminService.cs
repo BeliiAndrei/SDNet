@@ -45,7 +45,15 @@ namespace SDNet.Services.ServiceCatalog
             string description,
             string fulfillmentGroup,
             string requestType,
-            int estimatedHours)
+            int estimatedHours,
+            string defaultTaskTypeName,
+            string defaultPriority,
+            string defaultQueryTypeName,
+            string defaultItProjectName,
+            string defaultUserQueryTag,
+            string defaultPerformerDepartName,
+            string defaultShortDescription,
+            int slaHours)
         {
             using var connection = CreateOpenConnection();
             using var command = new SqlCommand("dbo.sp_ServiceCatalogService_Add", connection)
@@ -61,6 +69,14 @@ namespace SDNet.Services.ServiceCatalog
             command.Parameters.Add(new SqlParameter("@FulfillmentGroup", string.IsNullOrWhiteSpace(fulfillmentGroup) ? DBNull.Value : fulfillmentGroup.Trim()));
             command.Parameters.Add(new SqlParameter("@RequestType", string.IsNullOrWhiteSpace(requestType) ? DBNull.Value : requestType.Trim()));
             command.Parameters.Add(new SqlParameter("@EstimatedHours", estimatedHours < 0 ? 0 : estimatedHours));
+            command.Parameters.Add(new SqlParameter("@DefaultTaskTypeName", string.IsNullOrWhiteSpace(defaultTaskTypeName) ? DBNull.Value : defaultTaskTypeName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultPriority", string.IsNullOrWhiteSpace(defaultPriority) ? DBNull.Value : defaultPriority.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultQueryTypeName", string.IsNullOrWhiteSpace(defaultQueryTypeName) ? DBNull.Value : defaultQueryTypeName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultItProjectName", string.IsNullOrWhiteSpace(defaultItProjectName) ? DBNull.Value : defaultItProjectName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultUserQueryTag", string.IsNullOrWhiteSpace(defaultUserQueryTag) ? DBNull.Value : defaultUserQueryTag.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultPerformerDepartName", string.IsNullOrWhiteSpace(defaultPerformerDepartName) ? DBNull.Value : defaultPerformerDepartName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultShortDescription", string.IsNullOrWhiteSpace(defaultShortDescription) ? DBNull.Value : defaultShortDescription.Trim()));
+            command.Parameters.Add(new SqlParameter("@SlaHours", slaHours < 0 ? 0 : slaHours));
             command.ExecuteNonQuery();
         }
 
@@ -91,7 +107,15 @@ namespace SDNet.Services.ServiceCatalog
             string description,
             string fulfillmentGroup,
             string requestType,
-            int estimatedHours)
+            int estimatedHours,
+            string defaultTaskTypeName,
+            string defaultPriority,
+            string defaultQueryTypeName,
+            string defaultItProjectName,
+            string defaultUserQueryTag,
+            string defaultPerformerDepartName,
+            string defaultShortDescription,
+            int slaHours)
         {
             using var connection = CreateOpenConnection();
             using var command = new SqlCommand("dbo.sp_ServiceCatalogService_Update", connection)
@@ -107,6 +131,14 @@ namespace SDNet.Services.ServiceCatalog
             command.Parameters.Add(new SqlParameter("@FulfillmentGroup", string.IsNullOrWhiteSpace(fulfillmentGroup) ? DBNull.Value : fulfillmentGroup.Trim()));
             command.Parameters.Add(new SqlParameter("@RequestType", string.IsNullOrWhiteSpace(requestType) ? DBNull.Value : requestType.Trim()));
             command.Parameters.Add(new SqlParameter("@EstimatedHours", estimatedHours < 0 ? 0 : estimatedHours));
+            command.Parameters.Add(new SqlParameter("@DefaultTaskTypeName", string.IsNullOrWhiteSpace(defaultTaskTypeName) ? DBNull.Value : defaultTaskTypeName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultPriority", string.IsNullOrWhiteSpace(defaultPriority) ? DBNull.Value : defaultPriority.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultQueryTypeName", string.IsNullOrWhiteSpace(defaultQueryTypeName) ? DBNull.Value : defaultQueryTypeName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultItProjectName", string.IsNullOrWhiteSpace(defaultItProjectName) ? DBNull.Value : defaultItProjectName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultUserQueryTag", string.IsNullOrWhiteSpace(defaultUserQueryTag) ? DBNull.Value : defaultUserQueryTag.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultPerformerDepartName", string.IsNullOrWhiteSpace(defaultPerformerDepartName) ? DBNull.Value : defaultPerformerDepartName.Trim()));
+            command.Parameters.Add(new SqlParameter("@DefaultShortDescription", string.IsNullOrWhiteSpace(defaultShortDescription) ? DBNull.Value : defaultShortDescription.Trim()));
+            command.Parameters.Add(new SqlParameter("@SlaHours", slaHours < 0 ? 0 : slaHours));
             command.ExecuteNonQuery();
         }
 

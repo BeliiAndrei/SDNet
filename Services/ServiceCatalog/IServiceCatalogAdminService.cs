@@ -17,7 +17,15 @@ namespace SDNet.Services.ServiceCatalog
             string description,
             string fulfillmentGroup,
             string requestType,
-            int estimatedHours);
+            int estimatedHours,
+            string defaultTaskTypeName,
+            string defaultPriority,
+            string defaultQueryTypeName,
+            string defaultItProjectName,
+            string defaultUserQueryTag,
+            string defaultPerformerDepartName,
+            string defaultShortDescription,
+            int slaHours);
 
         void UpdateCategory(
             int id,
@@ -32,7 +40,15 @@ namespace SDNet.Services.ServiceCatalog
             string description,
             string fulfillmentGroup,
             string requestType,
-            int estimatedHours);
+            int estimatedHours,
+            string defaultTaskTypeName,
+            string defaultPriority,
+            string defaultQueryTypeName,
+            string defaultItProjectName,
+            string defaultUserQueryTag,
+            string defaultPerformerDepartName,
+            string defaultShortDescription,
+            int slaHours);
 
         void DeleteNode(int id);
     }

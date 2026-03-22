@@ -164,6 +164,7 @@ namespace SDNet.Data
             command.Parameters.Add(new SqlParameter("@PerformerDepartName", DbValue(task.PerformerDepartName)));
             command.Parameters.Add(new SqlParameter("@PerformPercent", Math.Clamp(task.PerformPercent, 0, 100)));
             command.Parameters.Add(new SqlParameter("@DateClosed", task.DateClosed.HasValue ? task.DateClosed.Value : DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@ServiceProfileId", task.ServiceProfileId.HasValue ? task.ServiceProfileId.Value : DBNull.Value));
             command.Parameters.Add(new SqlParameter("@NotesJson", task.Notes.Count > 0 ? JsonSerializer.Serialize(task.Notes) : DBNull.Value));
 
             command.Parameters.Add(new SqlParameter("@IT_SystemArea", task is ITTask itTask ? DbValue(itTask.SystemArea) : DBNull.Value));
@@ -282,6 +283,7 @@ namespace SDNet.Data
             task.PerformerDepartName = reader.AsString("PerformerDepartName");
             task.PerformPercent = reader.AsInt("PerformPercent");
             task.DateClosed = reader.AsNullableDateTime("DateClosed");
+            task.ServiceProfileId = reader.AsNullableInt("ServiceProfileId");
             task.Notes = ParseNotes(reader.AsNullableString("NotesJson"));
 
             switch (task)
@@ -352,6 +354,7 @@ namespace SDNet.Data
             task.PerformerDepartName = "Service Desk";
             task.PerformPercent = 0;
             task.DateClosed = null;
+            task.ServiceProfileId = null;
         }
 
     }

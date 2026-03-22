@@ -24,6 +24,12 @@
                         SelectedItem="{Binding SelectedTaskType}" />
             </sf:SfTextInputLayout>
 
+            <sf:SfTextInputLayout Hint="Профиль услуги">
+                <Picker ItemsSource="{Binding ServiceProfileOptions}"
+                        SelectedItem="{Binding SelectedServiceProfile}"
+                        Title="Выберите профиль услуги" />
+            </sf:SfTextInputLayout>
+
             <Grid ColumnDefinitions="*,*"
                   ColumnSpacing="{StaticResource LayoutSpacing}">
                 <sf:SfTextInputLayout Grid.Column="0" Hint="№ запроса">

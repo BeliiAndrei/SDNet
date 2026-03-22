@@ -3,7 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SDNet.Models;
 using SDNet.Models.ServiceCatalog;
+using SDNet.Models.ServiceProfiles;
 using SDNet.Services.ServiceCatalog;
+using SDNet.Services.ServiceProfiles;
+using SDNet.Services.TaskCreation;
 
 namespace SDNet.PageModels
 {
@@ -12,10 +15,20 @@ namespace SDNet.PageModels
         private readonly CurrentUserContext _currentUserContext;
         private readonly IServiceCatalogDataService _serviceCatalogDataService;
         private readonly IServiceCatalogAdminService _serviceCatalogAdminService;
+        private readonly ITaskReferenceDataService _taskReferenceDataService;
+        private readonly ISDTaskFactoryMethodService _taskFactoryMethodService;
+        private readonly IServiceProfileFlyweightFactory _serviceProfileFlyweightFactory;
         private readonly HashSet<int> _expandedCategoryIds = [];
 
         public ObservableCollection<ServiceCatalogTreeItem> VisibleNodes { get; } = [];
         public ObservableCollection<ServiceCatalogCategoryOption> ParentCategories { get; } = [];
+        public ObservableCollection<string> ServiceQueryTypeOptions { get; } = [];
+        public ObservableCollection<string> ServiceItProjectOptions { get; } = [];
+        public ObservableCollection<string> ServiceDepartmentOptions { get; } = [];
+
+        public IReadOnlyList<string> ServiceTaskTypes => _taskFactoryMethodService.SupportedTaskTypes;
+
+        public IReadOnlyList<string> ServicePriorities { get; } = ["Низкий", "Средний", "Высокий", "Критичный"];
 
         [ObservableProperty]
         private ServiceCatalogTreeItem? _selectedNode;
@@ -51,6 +64,30 @@ namespace SDNet.PageModels
         private string _newServiceEstimatedHours = "8";
 
         [ObservableProperty]
+        private string _newServiceDefaultTaskType = SDTaskTypes.ITTask;
+
+        [ObservableProperty]
+        private string _newServiceDefaultPriority = "Средний";
+
+        [ObservableProperty]
+        private string _newServiceDefaultQueryTypeName = string.Empty;
+
+        [ObservableProperty]
+        private string _newServiceDefaultItProjectName = string.Empty;
+
+        [ObservableProperty]
+        private string _newServiceDefaultUserQueryTag = "NEW";
+
+        [ObservableProperty]
+        private string _newServiceDefaultPerformerDepartName = string.Empty;
+
+        [ObservableProperty]
+        private string _newServiceDefaultShortDescription = string.Empty;
+
+        [ObservableProperty]
+        private string _newServiceSlaHours = "8";
+
+        [ObservableProperty]
         private string _statusMessage = string.Empty;
 
         [ObservableProperty]
@@ -74,6 +111,30 @@ namespace SDNet.PageModels
         [ObservableProperty]
         private string _editServiceEstimatedHours = "0";
 
+        [ObservableProperty]
+        private string _editServiceDefaultTaskType = SDTaskTypes.ITTask;
+
+        [ObservableProperty]
+        private string _editServiceDefaultPriority = "Средний";
+
+        [ObservableProperty]
+        private string _editServiceDefaultQueryTypeName = string.Empty;
+
+        [ObservableProperty]
+        private string _editServiceDefaultItProjectName = string.Empty;
+
+        [ObservableProperty]
+        private string _editServiceDefaultUserQueryTag = "NEW";
+
+        [ObservableProperty]
+        private string _editServiceDefaultPerformerDepartName = string.Empty;
+
+        [ObservableProperty]
+        private string _editServiceDefaultShortDescription = string.Empty;
+
+        [ObservableProperty]
+        private string _editServiceSlaHours = "8";
+
         public bool IsAdministrator => IsAdministratorUser(_currentUserContext.CurrentUser);
 
         public bool HasSelectedNode => SelectedNode is not null;
@@ -84,14 +145,22 @@ namespace SDNet.PageModels
 
         public bool IsSelectedService => SelectedNode is not null && !SelectedNode.IsCategory;
 
+        public bool CanCreateTaskFromSelectedService => IsSelectedService;
+
         public ServiceCatalogPageModel(
             CurrentUserContext currentUserContext,
             IServiceCatalogDataService serviceCatalogDataService,
-            IServiceCatalogAdminService serviceCatalogAdminService)
+            IServiceCatalogAdminService serviceCatalogAdminService,
+            ITaskReferenceDataService taskReferenceDataService,
+            ISDTaskFactoryMethodService taskFactoryMethodService,
+            IServiceProfileFlyweightFactory serviceProfileFlyweightFactory)
         {
             _currentUserContext = currentUserContext;
             _serviceCatalogDataService = serviceCatalogDataService;
             _serviceCatalogAdminService = serviceCatalogAdminService;
+            _taskReferenceDataService = taskReferenceDataService;
+            _taskFactoryMethodService = taskFactoryMethodService;
+            _serviceProfileFlyweightFactory = serviceProfileFlyweightFactory;
         }
 
         partial void OnSelectedNodeChanged(ServiceCatalogTreeItem? value)
@@ -100,6 +169,7 @@ namespace SDNet.PageModels
             OnPropertyChanged(nameof(NoSelectedNode));
             OnPropertyChanged(nameof(IsSelectedCategory));
             OnPropertyChanged(nameof(IsSelectedService));
+            OnPropertyChanged(nameof(CanCreateTaskFromSelectedService));
 
             if (value is null)
             {
@@ -130,6 +200,7 @@ namespace SDNet.PageModels
         [RelayCommand]
         private void Appearing()
         {
+            LoadTaskDefaultsMetadata();
             LoadCatalogTree();
         }
 
@@ -137,6 +208,7 @@ namespace SDNet.PageModels
         private void Reload()
         {
             _serviceCatalogDataService.InvalidateCache();
+            _serviceProfileFlyweightFactory.InvalidateCache();
             LoadCatalogTree();
         }
 
@@ -236,6 +308,9 @@ namespace SDNet.PageModels
             int estimatedHours = int.TryParse(NewServiceEstimatedHours, out int parsedHours) && parsedHours >= 0
                 ? parsedHours
                 : 0;
+            int slaHours = int.TryParse(NewServiceSlaHours, out int parsedSlaHours) && parsedSlaHours >= 0
+                ? parsedSlaHours
+                : 0;
 
             try
             {
@@ -246,10 +321,19 @@ namespace SDNet.PageModels
                     NewServiceDescription,
                     NewServiceFulfillmentGroup,
                     NewServiceRequestType,
-                    estimatedHours);
+                    estimatedHours,
+                    NewServiceDefaultTaskType,
+                    NewServiceDefaultPriority,
+                    NewServiceDefaultQueryTypeName,
+                    NewServiceDefaultItProjectName,
+                    NewServiceDefaultUserQueryTag,
+                    NewServiceDefaultPerformerDepartName,
+                    NewServiceDefaultShortDescription,
+                    slaHours);
 
                 _expandedCategoryIds.Add(SelectedParentCategory.Id.Value);
                 _serviceCatalogDataService.InvalidateCache();
+                _serviceProfileFlyweightFactory.InvalidateCache();
                 LoadCatalogTree();
 
                 NewServiceName = string.Empty;
@@ -258,6 +342,7 @@ namespace SDNet.PageModels
                 NewServiceFulfillmentGroup = string.Empty;
                 NewServiceRequestType = "Request";
                 NewServiceEstimatedHours = "8";
+                ResetNewServiceProfileDefaults();
                 StatusMessage = "Конечная услуга каталога сохранена.";
                 await AppShell.DisplayToastAsync("Услуга добавлена");
             }
@@ -309,6 +394,9 @@ namespace SDNet.PageModels
                     int estimatedHours = int.TryParse(EditServiceEstimatedHours, out int parsedHours) && parsedHours >= 0
                         ? parsedHours
                         : 0;
+                    int slaHours = int.TryParse(EditServiceSlaHours, out int parsedSlaHours) && parsedSlaHours >= 0
+                        ? parsedSlaHours
+                        : 0;
 
                     _serviceCatalogAdminService.UpdateService(
                         SelectedNode.Id,
@@ -317,11 +405,20 @@ namespace SDNet.PageModels
                         EditNodeDescription,
                         EditServiceFulfillmentGroup,
                         EditServiceRequestType,
-                        estimatedHours);
+                        estimatedHours,
+                        EditServiceDefaultTaskType,
+                        EditServiceDefaultPriority,
+                        EditServiceDefaultQueryTypeName,
+                        EditServiceDefaultItProjectName,
+                        EditServiceDefaultUserQueryTag,
+                        EditServiceDefaultPerformerDepartName,
+                        EditServiceDefaultShortDescription,
+                        slaHours);
                 }
 
                 int selectedId = SelectedNode.Id;
                 _serviceCatalogDataService.InvalidateCache();
+                _serviceProfileFlyweightFactory.InvalidateCache();
                 LoadCatalogTree();
                 ReselectNode(selectedId);
                 StatusMessage = "Изменения каталога сохранены.";
@@ -357,6 +454,7 @@ namespace SDNet.PageModels
                 }
 
                 _serviceCatalogDataService.InvalidateCache();
+                _serviceProfileFlyweightFactory.InvalidateCache();
                 SelectedNode = null;
                 LoadCatalogTree();
                 StatusMessage = "Узел каталога удален.";
@@ -366,6 +464,25 @@ namespace SDNet.PageModels
             {
                 StatusMessage = ex.Message;
             }
+        }
+
+        [RelayCommand]
+        private async Task CreateTaskFromSelectedService()
+        {
+            if (SelectedNode is null || SelectedNode.IsCategory)
+            {
+                StatusMessage = "Сначала выберите конечную услугу в дереве каталога.";
+                return;
+            }
+
+            IServiceProfileFlyweight? flyweight = _serviceProfileFlyweightFactory.GetByServiceCatalogNodeId(SelectedNode.Id);
+            if (flyweight is null)
+            {
+                StatusMessage = "Для выбранной услуги не найден общий профиль.";
+                return;
+            }
+
+            await Shell.Current.GoToAsync($"sdtask-edit?isNew=true&serviceProfileId={flyweight.Id}");
         }
 
         private void LoadCatalogTree()
@@ -458,6 +575,38 @@ namespace SDNet.PageModels
             }
         }
 
+        private void LoadTaskDefaultsMetadata()
+        {
+            PopulateOptions(ServiceQueryTypeOptions, _taskReferenceDataService.GetQueryTypes());
+            PopulateOptions(ServiceItProjectOptions, _taskReferenceDataService.GetItProjects());
+            PopulateOptions(ServiceDepartmentOptions, _taskReferenceDataService.GetDepartments());
+
+            if (string.IsNullOrWhiteSpace(NewServiceDefaultQueryTypeName))
+            {
+                NewServiceDefaultQueryTypeName = ServiceQueryTypeOptions.FirstOrDefault() ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(NewServiceDefaultItProjectName))
+            {
+                NewServiceDefaultItProjectName = ServiceItProjectOptions.FirstOrDefault() ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(NewServiceDefaultPerformerDepartName))
+            {
+                NewServiceDefaultPerformerDepartName = ServiceDepartmentOptions.FirstOrDefault() ?? string.Empty;
+            }
+        }
+
+        private static void PopulateOptions(ObservableCollection<string> target, IReadOnlyList<string> source)
+        {
+            target.Clear();
+
+            foreach (string value in source.Where(v => !string.IsNullOrWhiteSpace(v)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                target.Add(value);
+            }
+        }
+
         private void PopulateEditFields(ServiceCatalogTreeItem item)
         {
             EditNodeName = item.Name;
@@ -469,12 +618,30 @@ namespace SDNet.PageModels
                 EditServiceFulfillmentGroup = service.FulfillmentGroup;
                 EditServiceRequestType = service.RequestType;
                 EditServiceEstimatedHours = service.EstimatedHours.ToString();
+
+                IServiceProfileFlyweight? flyweight = _serviceProfileFlyweightFactory.GetByServiceCatalogNodeId(item.Id);
+                EditServiceDefaultTaskType = flyweight?.DefaultTaskTypeName ?? SDTaskTypes.ITTask;
+                EditServiceDefaultPriority = flyweight?.DefaultPriority ?? "Средний";
+                EditServiceDefaultQueryTypeName = flyweight?.DefaultQueryTypeName ?? ServiceQueryTypeOptions.FirstOrDefault() ?? string.Empty;
+                EditServiceDefaultItProjectName = flyweight?.DefaultItProjectName ?? ServiceItProjectOptions.FirstOrDefault() ?? string.Empty;
+                EditServiceDefaultUserQueryTag = flyweight?.DefaultUserQueryTag ?? "NEW";
+                EditServiceDefaultPerformerDepartName = flyweight?.DefaultPerformerDepartName ?? ServiceDepartmentOptions.FirstOrDefault() ?? string.Empty;
+                EditServiceDefaultShortDescription = flyweight?.DefaultShortDescription ?? string.Empty;
+                EditServiceSlaHours = (flyweight?.SlaHours ?? 0).ToString();
             }
             else
             {
                 EditServiceFulfillmentGroup = string.Empty;
                 EditServiceRequestType = string.Empty;
                 EditServiceEstimatedHours = "0";
+                EditServiceDefaultTaskType = SDTaskTypes.ITTask;
+                EditServiceDefaultPriority = "Средний";
+                EditServiceDefaultQueryTypeName = string.Empty;
+                EditServiceDefaultItProjectName = string.Empty;
+                EditServiceDefaultUserQueryTag = "NEW";
+                EditServiceDefaultPerformerDepartName = string.Empty;
+                EditServiceDefaultShortDescription = string.Empty;
+                EditServiceSlaHours = "8";
             }
         }
 
@@ -486,6 +653,26 @@ namespace SDNet.PageModels
             EditServiceFulfillmentGroup = string.Empty;
             EditServiceRequestType = string.Empty;
             EditServiceEstimatedHours = "0";
+            EditServiceDefaultTaskType = SDTaskTypes.ITTask;
+            EditServiceDefaultPriority = "Средний";
+            EditServiceDefaultQueryTypeName = string.Empty;
+            EditServiceDefaultItProjectName = string.Empty;
+            EditServiceDefaultUserQueryTag = "NEW";
+            EditServiceDefaultPerformerDepartName = string.Empty;
+            EditServiceDefaultShortDescription = string.Empty;
+            EditServiceSlaHours = "8";
+        }
+
+        private void ResetNewServiceProfileDefaults()
+        {
+            NewServiceDefaultTaskType = SDTaskTypes.ITTask;
+            NewServiceDefaultPriority = "Средний";
+            NewServiceDefaultQueryTypeName = ServiceQueryTypeOptions.FirstOrDefault() ?? string.Empty;
+            NewServiceDefaultItProjectName = ServiceItProjectOptions.FirstOrDefault() ?? string.Empty;
+            NewServiceDefaultUserQueryTag = "NEW";
+            NewServiceDefaultPerformerDepartName = ServiceDepartmentOptions.FirstOrDefault() ?? string.Empty;
+            NewServiceDefaultShortDescription = string.Empty;
+            NewServiceSlaHours = "8";
         }
 
         private static bool IsAdministratorUser(UserInfo? user)

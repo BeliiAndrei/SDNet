@@ -22,6 +22,12 @@ namespace SDNEt.BDParser
             return reader.IsDBNull(ordinal) ? defaultValue : reader.GetInt32(ordinal);
         }
 
+        public static int? AsNullableInt(this SqlDataReader reader, string columnName)
+        {
+            int ordinal = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+        }
+
         public static long AsLong(this SqlDataReader reader, string columnName, long defaultValue = 0L)
         {
             int ordinal = reader.GetOrdinal(columnName);

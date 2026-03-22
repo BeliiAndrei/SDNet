@@ -4,6 +4,7 @@ using SDNet.Services.Auth;
 using SDNet.Services.Export;
 using SDNet.Services.Navigation;
 using SDNet.Services.ServiceCatalog;
+using SDNet.Services.ServiceProfiles;
 using SDNet.Services.TaskCreation;
 using SDNet.Services.TaskStatusAudit;
 using SDNet.Services.Theming;
@@ -60,6 +61,7 @@ namespace SDNet
             builder.Services.AddSingleton<IReferenceCatalogAdminService, SqlReferenceCatalogAdminService>();
             builder.Services.AddSingleton<IServiceCatalogDataService, SqlServiceCatalogDataService>();
             builder.Services.AddSingleton<IServiceCatalogAdminService, SqlServiceCatalogAdminService>();
+            builder.Services.AddSingleton<IServiceProfileFlyweightFactory, ServiceProfileFlyweightFactory>();
             builder.Services.AddSingleton<IUserDirectoryService, SqlUserDirectoryService>();
             builder.Services.AddSingleton<IAuthorizationService, SqlAuthorizationService>();
             builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();

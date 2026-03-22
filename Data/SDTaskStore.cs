@@ -206,6 +206,7 @@ namespace SDNet.Data
             task.PerformerDepartName = "Service Desk";
             task.PerformPercent = 0;
             task.DateClosed = null;
+            task.ServiceProfileId = null;
         }
     }
 }

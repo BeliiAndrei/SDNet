@@ -149,6 +149,22 @@
         <Border Grid.Column="1">
             <ScrollView>
                 <VerticalStackLayout Spacing="{StaticResource size120}">
+                    <Border Padding="12"
+                            StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                        <VerticalStackLayout Spacing="{StaticResource size120}">
+                            <Label Text="Работа с выбранной услугой"
+                                   Style="{StaticResource Body2Strong}" />
+
+                            <Label Text="Выберите конечную услугу в дереве слева, чтобы создать новую задачу по её общему сервисному профилю."
+                                   Style="{StaticResource Caption1}" />
+
+                            <Button Text="Создать задачу по выбранной услуге"
+                                    IsVisible="{Binding CanCreateTaskFromSelectedService}"
+                                    Command="{Binding CreateTaskFromSelectedServiceCommand}" />
+                        </VerticalStackLayout>
+                    </Border>
+
                     <Label Text="Администрирование"
                            Style="{StaticResource Body1Strong}" />
 
@@ -229,6 +245,47 @@
                                        Keyboard="Numeric"
                                        Placeholder="8" />
 
+                                <Label Text="Профиль услуги: тип задачи"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ServiceTaskTypes}"
+                                        SelectedItem="{Binding NewServiceDefaultTaskType}" />
+
+                                <Label Text="Профиль услуги: приоритет"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ServicePriorities}"
+                                        SelectedItem="{Binding NewServiceDefaultPriority}" />
+
+                                <Label Text="Профиль услуги: тип запроса"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ServiceQueryTypeOptions}"
+                                        SelectedItem="{Binding NewServiceDefaultQueryTypeName}" />
+
+                                <Label Text="Профиль услуги: IT-проект"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ServiceItProjectOptions}"
+                                        SelectedItem="{Binding NewServiceDefaultItProjectName}" />
+
+                                <Label Text="Профиль услуги: тег"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceDefaultUserQueryTag}"
+                                       Placeholder="NEW" />
+
+                                <Label Text="Профиль услуги: отдел исполнения"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ServiceDepartmentOptions}"
+                                        SelectedItem="{Binding NewServiceDefaultPerformerDepartName}" />
+
+                                <Label Text="Профиль услуги: шаблон описания"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceDefaultShortDescription}"
+                                       Placeholder="Стандартный текст для новой заявки" />
+
+                                <Label Text="Профиль услуги: SLA в часах"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceSlaHours}"
+                                       Keyboard="Numeric"
+                                       Placeholder="8" />
+
                                 <Label Text="Описание услуги"
                                        Style="{StaticResource Caption1}" />
                                 <Editor Text="{Binding NewServiceDescription}"
@@ -291,6 +348,44 @@
                                         <Label Text="Оценка в часах"
                                                Style="{StaticResource Caption1}" />
                                         <Entry Text="{Binding EditServiceEstimatedHours}"
+                                               Keyboard="Numeric" />
+
+                                        <Label Text="Профиль услуги: тип задачи"
+                                               Style="{StaticResource Caption1}" />
+                                        <Picker ItemsSource="{Binding ServiceTaskTypes}"
+                                                SelectedItem="{Binding EditServiceDefaultTaskType}" />
+
+                                        <Label Text="Профиль услуги: приоритет"
+                                               Style="{StaticResource Caption1}" />
+                                        <Picker ItemsSource="{Binding ServicePriorities}"
+                                                SelectedItem="{Binding EditServiceDefaultPriority}" />
+
+                                        <Label Text="Профиль услуги: тип запроса"
+                                               Style="{StaticResource Caption1}" />
+                                        <Picker ItemsSource="{Binding ServiceQueryTypeOptions}"
+                                                SelectedItem="{Binding EditServiceDefaultQueryTypeName}" />
+
+                                        <Label Text="Профиль услуги: IT-проект"
+                                               Style="{StaticResource Caption1}" />
+                                        <Picker ItemsSource="{Binding ServiceItProjectOptions}"
+                                                SelectedItem="{Binding EditServiceDefaultItProjectName}" />
+
+                                        <Label Text="Профиль услуги: тег"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceDefaultUserQueryTag}" />
+
+                                        <Label Text="Профиль услуги: отдел исполнения"
+                                               Style="{StaticResource Caption1}" />
+                                        <Picker ItemsSource="{Binding ServiceDepartmentOptions}"
+                                                SelectedItem="{Binding EditServiceDefaultPerformerDepartName}" />
+
+                                        <Label Text="Профиль услуги: шаблон описания"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceDefaultShortDescription}" />
+
+                                        <Label Text="Профиль услуги: SLA в часах"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceSlaHours}"
                                                Keyboard="Numeric" />
                                     </VerticalStackLayout>
 

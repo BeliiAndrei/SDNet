@@ -18,6 +18,7 @@ namespace SDNet.Models
         public string PerformerDepartName { get; set; } = string.Empty;
         public int PerformPercent { get; set; }
         public DateTime? DateClosed { get; set; }
+        public int? ServiceProfileId { get; set; }
         public List<string> Notes { get; set; } = [];
 
         public abstract string TaskTypeName { get; }
@@ -41,6 +42,7 @@ namespace SDNet.Models
             target.PerformerDepartName = PerformerDepartName;
             target.PerformPercent = PerformPercent;
             target.DateClosed = DateClosed;
+            target.ServiceProfileId = ServiceProfileId;
             target.Notes = [.. Notes];
         }
     }
