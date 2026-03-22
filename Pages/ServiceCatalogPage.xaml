@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.ServiceCatalogPage"
+             x:DataType="pageModels:ServiceCatalogPageModel"
+             x:Name="ServiceCatalogRoot"
+             Title="Каталог услуг">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference ServiceCatalogRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid Padding="{StaticResource LayoutPadding}"
+          ColumnDefinitions="1.6*,1*"
+          ColumnSpacing="{StaticResource LayoutSpacing}">
+
+        <Border Grid.Column="0">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="{StaticResource LayoutSpacing}">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Каталог услуг" Style="{StaticResource Title3}" />
+                        <Label Text="{Binding TotalServicesCount, StringFormat='Всего услуг: {0}'}"
+                               Style="{StaticResource Caption1}" />
+                    </VerticalStackLayout>
+
+                    <Button Grid.Column="1"
+                            Text="Обновить"
+                            Command="{Binding ReloadCommand}" />
+                </Grid>
+
+                <Label Grid.Row="1"
+                       Text="Дерево каталога"
+                       Style="{StaticResource Body2Strong}" />
+
+                <CollectionView Grid.Row="2"
+                                ItemsSource="{Binding VisibleNodes}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedNode}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="pageModels:ServiceCatalogTreeItem">
+                            <Grid ColumnDefinitions="Auto,4,Auto,*"
+                                  ColumnSpacing="{StaticResource size80}"
+                                  Padding="0,2">
+                                <BoxView Grid.Column="0"
+                                         WidthRequest="{Binding IndentWidth}"
+                                         Color="Transparent" />
+
+                                <BoxView Grid.Column="1"
+                                         CornerRadius="2"
+                                         Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray500}}" />
+
+                                <Grid Grid.Column="2"
+                                      WidthRequest="42"
+                                      RowDefinitions="Auto,*"
+                                      IsVisible="{Binding IsCategory}">
+                                    <BoxView Grid.Row="1"
+                                             HorizontalOptions="Center"
+                                             WidthRequest="2"
+                                             Color="{StaticResource Primary}"
+                                             Opacity="0.45" />
+                                    <Button Grid.RowSpan="2"
+                                            Padding="0"
+                                            Margin="0,4,0,4"
+                                            Text="{Binding ExpandGlyph}"
+                                            FontSize="18"
+                                            WidthRequest="34"
+                                            HeightRequest="34"
+                                            CornerRadius="17"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}"
+                                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                            Command="{Binding ToggleNodeCommand, Source={RelativeSource AncestorType={x:Type pageModels:ServiceCatalogPageModel}}, x:DataType=pageModels:ServiceCatalogPageModel}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+
+                                <Border Grid.Column="3"
+                                        Padding="12"
+                                        StrokeThickness="1"
+                                        Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding IsCategory}"
+                                                     Value="True">
+                                            <Setter Property="Background"
+                                                    Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
+                                            <Setter Property="Stroke"
+                                                    Value="{StaticResource Primary}" />
+                                            <Setter Property="StrokeThickness"
+                                                    Value="2" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+
+                                    <Grid ColumnDefinitions="Auto,*"
+                                          ColumnSpacing="{StaticResource LayoutSpacing}">
+                                        <Border Grid.Column="0"
+                                                Padding="0"
+                                                WidthRequest="28"
+                                                HeightRequest="28"
+                                                StrokeThickness="0"
+                                                Background="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Tertiary}}">
+                                            <Label Text="{Binding NodeGlyph}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   TextColor="White"
+                                                   FontSize="12" />
+                                        </Border>
+
+                                        <VerticalStackLayout Grid.Column="1"
+                                                             Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto,Auto"
+                                                  ColumnSpacing="{StaticResource LayoutSpacing}">
+                                                <Label Grid.Column="0"
+                                                       Text="{Binding Name}"
+                                                       Style="{StaticResource Body2Strong}" />
+
+                                                <Border Grid.Column="1"
+                                                        Padding="8,2"
+                                                        StrokeThickness="0"
+                                                        Background="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource DarkSecondaryBackground}}">
+                                                    <Label Text="{Binding TypeLabel}"
+                                                           Style="{StaticResource Caption1Strong}" />
+                                                </Border>
+
+                                                <Label Grid.Column="2"
+                                                       Text="{Binding Code}"
+                                                       Style="{StaticResource Caption1}" />
+                                            </Grid>
+
+                                            <Label Text="{Binding Details}"
+                                                   Style="{StaticResource Caption1Strong}" />
+
+                                            <Label Text="{Binding Description}"
+                                                   Style="{StaticResource Caption1}"
+                                                   IsVisible="{Binding HasDescription}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="1">
+            <ScrollView>
+                <VerticalStackLayout Spacing="{StaticResource size120}">
+                    <Label Text="Администрирование"
+                           Style="{StaticResource Body1Strong}" />
+
+                    <Label Text="Добавление категорий, подкатегорий и конечных услуг доступно только администратору."
+                           Style="{StaticResource Caption1}" />
+
+                    <VerticalStackLayout IsVisible="{Binding IsAdministrator}"
+                                         Spacing="{StaticResource size160}">
+                        <Border Padding="12"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                            <VerticalStackLayout Spacing="{StaticResource size120}">
+                                <Label Text="Добавить категорию / подкатегорию"
+                                       Style="{StaticResource Body2Strong}" />
+
+                                <Label Text="Родительская категория"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ParentCategories}"
+                                        SelectedItem="{Binding SelectedParentCategory}" />
+
+                                <Label Text="Название категории"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewCategoryName}"
+                                       Placeholder="Например, Сетевые сервисы" />
+
+                                <Label Text="Код категории"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewCategoryCode}"
+                                       Placeholder="Например, NET_SERVICES" />
+
+                                <Label Text="Описание"
+                                       Style="{StaticResource Caption1}" />
+                                <Editor Text="{Binding NewCategoryDescription}"
+                                        Placeholder="Краткое описание категории"
+                                        AutoSize="TextChanges"
+                                        MinimumHeightRequest="100" />
+
+                                <Button Text="Сохранить категорию"
+                                        Command="{Binding AddCategoryCommand}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Padding="12"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                            <VerticalStackLayout Spacing="{StaticResource size120}">
+                                <Label Text="Добавить конечную услугу"
+                                       Style="{StaticResource Body2Strong}" />
+
+                                <Label Text="Категория-владелец"
+                                       Style="{StaticResource Caption1}" />
+                                <Picker ItemsSource="{Binding ParentCategories}"
+                                        SelectedItem="{Binding SelectedParentCategory}" />
+
+                                <Label Text="Название услуги"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceName}"
+                                       Placeholder="Например, Выдача VPN-доступа" />
+
+                                <Label Text="Код услуги"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceCode}"
+                                       Placeholder="Например, SVC_VPN_ACCESS" />
+
+                                <Label Text="Группа исполнения"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceFulfillmentGroup}"
+                                       Placeholder="Service Desk / Security / Infrastructure" />
+
+                                <Label Text="Тип запроса"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceRequestType}"
+                                       Placeholder="Request / Approval / Incident" />
+
+                                <Label Text="Оценка в часах"
+                                       Style="{StaticResource Caption1}" />
+                                <Entry Text="{Binding NewServiceEstimatedHours}"
+                                       Keyboard="Numeric"
+                                       Placeholder="8" />
+
+                                <Label Text="Описание услуги"
+                                       Style="{StaticResource Caption1}" />
+                                <Editor Text="{Binding NewServiceDescription}"
+                                        Placeholder="Краткое описание конечной услуги"
+                                        AutoSize="TextChanges"
+                                        MinimumHeightRequest="100" />
+
+                                <Button Text="Сохранить услугу"
+                                        Command="{Binding AddServiceCommand}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Padding="12"
+                                StrokeThickness="1"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}">
+                            <VerticalStackLayout Spacing="{StaticResource size120}">
+                                <Label Text="Редактировать выбранный узел"
+                                       Style="{StaticResource Body2Strong}" />
+
+                                <Label Text="Выберите категорию или услугу в дереве слева."
+                                       Style="{StaticResource Caption1}"
+                                       IsVisible="{Binding NoSelectedNode}" />
+
+                                <VerticalStackLayout IsVisible="{Binding HasSelectedNode}"
+                                                     Spacing="{StaticResource size120}">
+                                    <Grid ColumnDefinitions="Auto,*"
+                                          ColumnSpacing="{StaticResource LayoutSpacing}">
+                                        <Label Grid.Column="0"
+                                               Text="Тип:"
+                                               Style="{StaticResource Caption1Strong}" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding SelectedNode.TypeLabel}"
+                                               Style="{StaticResource Caption1}" />
+                                    </Grid>
+
+                                    <Label Text="Название"
+                                           Style="{StaticResource Caption1}" />
+                                    <Entry Text="{Binding EditNodeName}" />
+
+                                    <Label Text="Код"
+                                           Style="{StaticResource Caption1}" />
+                                    <Entry Text="{Binding EditNodeCode}" />
+
+                                    <Label Text="Описание"
+                                           Style="{StaticResource Caption1}" />
+                                    <Editor Text="{Binding EditNodeDescription}"
+                                            AutoSize="TextChanges"
+                                            MinimumHeightRequest="90" />
+
+                                    <VerticalStackLayout IsVisible="{Binding IsSelectedService}"
+                                                         Spacing="{StaticResource size120}">
+                                        <Label Text="Группа исполнения"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceFulfillmentGroup}" />
+
+                                        <Label Text="Тип запроса"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceRequestType}" />
+
+                                        <Label Text="Оценка в часах"
+                                               Style="{StaticResource Caption1}" />
+                                        <Entry Text="{Binding EditServiceEstimatedHours}"
+                                               Keyboard="Numeric" />
+                                    </VerticalStackLayout>
+
+                                    <Grid ColumnDefinitions="*,*"
+                                          ColumnSpacing="{StaticResource LayoutSpacing}">
+                                        <Button Grid.Column="0"
+                                                Text="Сохранить изменения"
+                                                Command="{Binding SaveSelectedNodeCommand}" />
+                                        <Button Grid.Column="1"
+                                                Text="Удалить"
+                                                Command="{Binding DeleteSelectedNodeCommand}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding StatusMessage}"
+                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
+                </VerticalStackLayout>
+            </ScrollView>
+        </Border>
+    </Grid>
+</ContentPage>

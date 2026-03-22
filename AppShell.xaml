@@ -15,6 +15,12 @@
         Route="task-list" />
 
     <ShellContent
+        Title="Каталог услуг"
+        Icon="{StaticResource IconDashboard}"
+        ContentTemplate="{DataTemplate pages:ServiceCatalogPage}"
+        Route="service-catalog" />
+
+    <ShellContent
         Title="Settings"
         Icon="{StaticResource IconSettings}"
         ContentTemplate="{DataTemplate pages:SettingsPage}"

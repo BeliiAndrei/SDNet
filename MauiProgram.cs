@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SDNet.Services.Auth;
 using SDNet.Services.Export;
 using SDNet.Services.Navigation;
+using SDNet.Services.ServiceCatalog;
 using SDNet.Services.TaskCreation;
 using SDNet.Services.TaskStatusAudit;
 using SDNet.Services.Theming;
@@ -57,6 +58,8 @@ namespace SDNet
             builder.Services.AddSingleton<ITaskReferenceDataService, SqlTaskReferenceDataService>();
             builder.Services.AddSingleton<ITaskExportService, TaskExportBridgeService>();
             builder.Services.AddSingleton<IReferenceCatalogAdminService, SqlReferenceCatalogAdminService>();
+            builder.Services.AddSingleton<IServiceCatalogDataService, SqlServiceCatalogDataService>();
+            builder.Services.AddSingleton<IServiceCatalogAdminService, SqlServiceCatalogAdminService>();
             builder.Services.AddSingleton<IUserDirectoryService, SqlUserDirectoryService>();
             builder.Services.AddSingleton<IAuthorizationService, SqlAuthorizationService>();
             builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
@@ -75,8 +78,10 @@ namespace SDNet
             builder.Services.AddSingleton<SettingsPageModel>();
             builder.Services.AddSingleton<ManageUsersPageModel>();
             builder.Services.AddSingleton<ManageReferencesPageModel>();
+            builder.Services.AddSingleton<ServiceCatalogPageModel>();
             builder.Services.AddSingleton<TaskStatusHistoryPageModel>();
             builder.Services.AddSingleton<ManageReferencesPage>();
+            builder.Services.AddSingleton<ServiceCatalogPage>();
             builder.Services.AddSingleton<TaskStatusHistoryPage>();
             builder.Services.AddTransient<TaskEditorPageModel>();
 
