@@ -55,7 +55,8 @@ namespace SDNet
                         sp.GetRequiredService<SqlTaskStatusChangeAuditComponent>(),
                         sp.GetRequiredService<CurrentUserContext>())));
             builder.Services.AddSingleton<ITaskStatusChangeHistoryService, SqlTaskStatusChangeHistoryService>();
-            builder.Services.AddSingleton<ISDTaskStore, SqlSDTaskStore>();
+            builder.Services.AddSingleton<SqlSDTaskStore>();
+            builder.Services.AddSingleton<ISDTaskStore, DepartmentScopedTaskStoreProxy>();
             builder.Services.AddSingleton<ITaskReferenceDataService, SqlTaskReferenceDataService>();
             builder.Services.AddSingleton<ITaskExportService, TaskExportBridgeService>();
             builder.Services.AddSingleton<IReferenceCatalogAdminService, SqlReferenceCatalogAdminService>();

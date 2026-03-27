@@ -135,10 +135,17 @@ namespace SDNet.PageModels
         [RelayCommand]
         private async Task CloneTask(SDTask task)
         {
-            SDTask clone = _taskStore.Clone(task.Id);
-            ApplyFiltersCore();
-            FocusOnTask(clone.Id);
-            await AppShell.DisplaySnackbarAsync($"Скопирована задача №{clone.UserQueryId}");
+            try
+            {
+                SDTask clone = _taskStore.Clone(task.Id);
+                ApplyFiltersCore();
+                FocusOnTask(clone.Id);
+                await AppShell.DisplaySnackbarAsync($"Скопирована задача №{clone.UserQueryId}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await AppShell.DisplaySnackbarAsync(ex.Message);
+            }
         }
 
         [RelayCommand]
@@ -168,12 +175,6 @@ namespace SDNet.PageModels
         private void ApplyFiltersCore()
         {
             IEnumerable<SDTask> query = _taskStore.GetAll();
-            UserInfo? currentUser = _currentUserContext.CurrentUser;
-            if (currentUser is not null && !IsAdministrator(currentUser))
-            {
-                query = query.Where(t =>
-                    string.Equals(t.UserDepartName, currentUser.UserDepartName, StringComparison.OrdinalIgnoreCase));
-            }
 
             if (int.TryParse(QueryIdFilter, out int taskId))
             {
@@ -313,12 +314,6 @@ namespace SDNet.PageModels
                 _currentUserContext.CurrentUser);
 
             await AppShell.DisplaySnackbarAsync($"Файл сохранен: {outputPath}");
-        }
-
-        private static bool IsAdministrator(UserInfo user)
-        {
-            return user.UserRoleId == 1
-                || string.Equals(user.UserRoleName, "Administrator", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

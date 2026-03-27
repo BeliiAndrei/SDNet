@@ -214,27 +214,29 @@ namespace SDNet.PageModels
             if (query.TryGetValue("id", out var idObj) &&
                 Guid.TryParse(idObj?.ToString(), out Guid id))
             {
-                SDTask? task = _taskStore.GetById(id);
-                if (task is null)
+                try
                 {
-                    FillDefaults();
-                    IsExistingTask = false;
+                    SDTask? task = _taskStore.GetById(id);
+                    if (task is null)
+                    {
+                        FillDefaults();
+                        IsExistingTask = false;
+                        return;
+                    }
+
+                    _taskId = task.Id;
+                    IsExistingTask = true;
+                    FillFromTask(task);
                     return;
                 }
-
-                if (!CanAccessDepartment(task.UserDepartName))
+                catch (UnauthorizedAccessException ex)
                 {
-                    AppShell.DisplaySnackbarAsync("Нет доступа к задачам другого департамента.").FireAndForgetSafeAsync();
+                    AppShell.DisplaySnackbarAsync(ex.Message).FireAndForgetSafeAsync();
                     Shell.Current.GoToAsync("..").FireAndForgetSafeAsync();
                     FillDefaults();
                     IsExistingTask = false;
                     return;
                 }
-
-                _taskId = task.Id;
-                IsExistingTask = true;
-                FillFromTask(task);
-                return;
             }
 
             IsExistingTask = false;
@@ -254,11 +256,6 @@ namespace SDNet.PageModels
             if (currentUser is not null && !IsAdministrator(currentUser))
             {
                 UserDepartName = currentUser.UserDepartName;
-                if (!CanAccessDepartment(UserDepartName))
-                {
-                    await AppShell.DisplaySnackbarAsync("Можно работать только со своим департаментом.");
-                    return;
-                }
             }
 
             UserInfo? selectedPerformerUser = _userDirectoryService.GetByFullName(SelectedPerformer);
@@ -296,11 +293,18 @@ namespace SDNet.PageModels
             task.ServiceProfileId = SelectedServiceProfile?.Id;
 
             ApplyTypeSpecific(task);
-            _taskStore.Save(task);
-            _taskId = task.Id;
-            IsExistingTask = true;
+            try
+            {
+                _taskStore.Save(task);
+                _taskId = task.Id;
+                IsExistingTask = true;
 
-            await Shell.Current.GoToAsync($"..?refresh=true&focusId={task.Id}");
+                await Shell.Current.GoToAsync($"..?refresh=true&focusId={task.Id}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await AppShell.DisplaySnackbarAsync(ex.Message);
+            }
         }
 
         [RelayCommand]
@@ -312,8 +316,15 @@ namespace SDNet.PageModels
                 return;
             }
 
-            _taskStore.Delete(_taskId);
-            await Shell.Current.GoToAsync("..?refresh=true");
+            try
+            {
+                _taskStore.Delete(_taskId);
+                await Shell.Current.GoToAsync("..?refresh=true");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await AppShell.DisplaySnackbarAsync(ex.Message);
+            }
         }
 
         [RelayCommand]
@@ -601,17 +612,6 @@ namespace SDNet.PageModels
                    parsedId > 0
                 ? parsedId
                 : null;
-        }
-
-        private bool CanAccessDepartment(string departmentName)
-        {
-            UserInfo? currentUser = _currentUserContext.CurrentUser;
-            if (currentUser is null || IsAdministrator(currentUser))
-            {
-                return true;
-            }
-
-            return string.Equals(currentUser.UserDepartName, departmentName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsAdministrator(UserInfo user)
