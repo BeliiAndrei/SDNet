@@ -4,9 +4,7 @@ namespace SDNet.Services.TaskStatusAudit
     {
         public abstract void Save(TaskStatusChangeAuditRecord record);
 
-        public virtual Task SaveAsync(
-            TaskStatusChangeAuditRecord record,
-            CancellationToken cancellationToken = default)
+        public virtual Task SaveAsync(TaskStatusChangeAuditRecord record, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Save(record);

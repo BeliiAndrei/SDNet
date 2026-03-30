@@ -21,9 +21,7 @@ namespace SDNet.Services.TaskStatusAudit
             }
         }
 
-        public override async Task SaveAsync(
-            TaskStatusChangeAuditRecord record,
-            CancellationToken cancellationToken = default)
+        public override async Task SaveAsync(TaskStatusChangeAuditRecord record, CancellationToken cancellationToken = default)
         {
             try
             {

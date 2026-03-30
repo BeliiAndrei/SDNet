@@ -31,9 +31,9 @@ namespace SDNet.Services.TaskStatusAudit
                 CommandTimeout = 30
             };
 
-            command.Parameters.Add(new SqlParameter("@TaskId", record.TaskId));
-            command.Parameters.Add(new SqlParameter("@UserQueryId", record.UserQueryId > 0 ? record.UserQueryId : DBNull.Value));
-            command.Parameters.Add(new SqlParameter("@OldStateName", record.OldStateName.Trim()));
+            command.Parameters.Add(new SqlParameter("@TaueryId", record.UserQueryId > 0 ? record.UserQueryId : DBNull.Value));
+            command.Parameters.Add(new SqlParameter("@OldStaskId", record.TaskId));
+            command.Parameters.Add(new SqlParameter("@UserQteName", record.OldStateName.Trim()));
             command.Parameters.Add(new SqlParameter("@NewStateName", record.NewStateName.Trim()));
             command.Parameters.Add(new SqlParameter("@ChangedByLogin", DbValue(record.ChangedByLogin)));
             command.Parameters.Add(new SqlParameter("@ChangedByName", DbValue(record.ChangedByName)));

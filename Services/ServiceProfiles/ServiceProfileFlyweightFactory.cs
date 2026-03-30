@@ -2,7 +2,6 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using SDNEt.BDParser;
 using SDNet.Models.ServiceProfiles;
-using SDNet.Services;
 
 namespace SDNet.Services.ServiceProfiles
 {

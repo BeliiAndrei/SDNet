@@ -16,9 +16,7 @@ namespace SDNet.Services.TaskStatusAudit
             _component.Save(record);
         }
 
-        public override Task SaveAsync(
-            TaskStatusChangeAuditRecord record,
-            CancellationToken cancellationToken = default)
+        public override Task SaveAsync(TaskStatusChangeAuditRecord record, CancellationToken cancellationToken = default)
         {
             return _component.SaveAsync(record, cancellationToken);
         }

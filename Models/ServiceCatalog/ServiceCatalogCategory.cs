@@ -4,11 +4,7 @@ namespace SDNet.Models.ServiceCatalog
     {
         private readonly List<ServiceCatalogComponent> _children = [];
 
-        public ServiceCatalogCategory(
-            int id,
-            string name,
-            string code,
-            string description = "")
+        public ServiceCatalogCategory(int id, string name, string code, string description = "")
             : base(id, name, code, description)
         {
         }

@@ -6,9 +6,7 @@ namespace SDNet.Services.TaskStatusAudit
     {
         private readonly CurrentUserContext _currentUserContext;
 
-        public UserContextTaskStatusChangeAuditDecorator(
-            TaskStatusChangeAuditComponent component,
-            CurrentUserContext currentUserContext)
+        public UserContextTaskStatusChangeAuditDecorator(TaskStatusChangeAuditComponent component, CurrentUserContext currentUserContext)
             : base(component)
         {
             _currentUserContext = currentUserContext ?? throw new ArgumentNullException(nameof(currentUserContext));
@@ -20,9 +18,7 @@ namespace SDNet.Services.TaskStatusAudit
             base.Save(record);
         }
 
-        public override Task SaveAsync(
-            TaskStatusChangeAuditRecord record,
-            CancellationToken cancellationToken = default)
+        public override Task SaveAsync(TaskStatusChangeAuditRecord record, CancellationToken cancellationToken = default)
         {
             PopulateMissingContext(record);
             return base.SaveAsync(record, cancellationToken);

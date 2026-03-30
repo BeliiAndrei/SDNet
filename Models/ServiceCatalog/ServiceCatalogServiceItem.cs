@@ -2,14 +2,8 @@ namespace SDNet.Models.ServiceCatalog
 {
     public sealed class ServiceCatalogServiceItem : ServiceCatalogComponent
     {
-        public ServiceCatalogServiceItem(
-            int id,
-            string name,
-            string code,
-            string description,
-            string fulfillmentGroup,
-            string requestType,
-            int estimatedHours)
+        public ServiceCatalogServiceItem(int id, string name, string code, string description, string fulfillmentGroup,
+                    string requestType, int estimatedHours)
             : base(id, name, code, description)
         {
             FulfillmentGroup = fulfillmentGroup?.Trim() ?? string.Empty;

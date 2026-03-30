@@ -10,6 +10,7 @@ using QuestLicenseType = QuestPDF.Infrastructure.LicenseType;
 using QuestPageSizes = QuestPDF.Helpers.PageSizes;
 using QuestSettings = QuestPDF.Settings;
 using PdfContainer = QuestPDF.Infrastructure.IContainer;
+using DocumentFormat.OpenXml;
 
 namespace SDNet.Services.Export
 {
@@ -123,7 +124,7 @@ namespace SDNet.Services.Export
         {
             string outputPath = BuildOutputPath(outputDirectory, fileNameWithoutExtension, FileExtension);
 
-            using var document = WordprocessingDocument.Create(outputPath, DocumentFormat.OpenXml.WordprocessingDocumentType.Document);
+            using var document = WordprocessingDocument.Create(outputPath, WordprocessingDocumentType.Document);
             MainDocumentPart mainPart = document.AddMainDocumentPart();
             mainPart.Document = new OxmlWord.Document(new OxmlWord.Body());
             OxmlWord.Body body = mainPart.Document.Body!;
@@ -228,14 +229,12 @@ namespace SDNet.Services.Export
     {
         public override string FileExtension => ".xlsx";
 
-        public override Task<string> SaveAsync(
-            string outputDirectory,
-            string fileNameWithoutExtension,
-            CancellationToken cancellationToken = default)
+        public override Task<string> SaveAsync(string outputDirectory, string fileNameWithoutExtension,
+                CancellationToken cancellationToken = default)
         {
             string outputPath = BuildOutputPath(outputDirectory, fileNameWithoutExtension, FileExtension);
 
-            using var document = SpreadsheetDocument.Create(outputPath, DocumentFormat.OpenXml.SpreadsheetDocumentType.Workbook);
+            using var document = SpreadsheetDocument.Create(outputPath, SpreadsheetDocumentType.Workbook);
             WorkbookPart workbookPart = document.AddWorkbookPart();
             workbookPart.Workbook = new OxmlSheet.Workbook();
 

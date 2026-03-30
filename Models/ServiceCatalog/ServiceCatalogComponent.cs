@@ -2,11 +2,7 @@ namespace SDNet.Models.ServiceCatalog
 {
     public abstract class ServiceCatalogComponent
     {
-        protected ServiceCatalogComponent(
-            int id,
-            string name,
-            string code,
-            string description = "")
+        protected ServiceCatalogComponent(int id, string name, string code, string description = "")
         {
             if (string.IsNullOrWhiteSpace(name))
             {
