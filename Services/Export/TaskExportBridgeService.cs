@@ -67,15 +67,32 @@ namespace SDNet.Services.Export
 
         private static string GetOutputDirectory()
         {
-            string root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            if (string.IsNullOrWhiteSpace(root))
-            {
-                root = FileSystem.Current.AppDataDirectory;
-            }
+            string root = GetExportRootDirectory();
 
             string outputDirectory = Path.Combine(root, "SDNet", "Exports");
             Directory.CreateDirectory(outputDirectory);
             return outputDirectory;
+        }
+
+        private static string GetExportRootDirectory()
+        {
+#if ANDROID
+            string? androidExternalDirectory =
+                Android.App.Application.Context.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments)?.AbsolutePath;
+
+            if (!string.IsNullOrWhiteSpace(androidExternalDirectory))
+            {
+                return androidExternalDirectory;
+            }
+#endif
+
+            string documentsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (!string.IsNullOrWhiteSpace(documentsDirectory))
+            {
+                return documentsDirectory;
+            }
+
+            return FileSystem.Current.AppDataDirectory;
         }
     }
 }

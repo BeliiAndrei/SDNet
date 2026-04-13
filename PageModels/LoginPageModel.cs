@@ -17,7 +17,7 @@ namespace SDNet.PageModels
         private string _password = string.Empty;
 
         [ObservableProperty]
-        private string _sqlServer = "localhost";
+        private string _sqlServer = DeviceInfo.Platform == DevicePlatform.Android ? "10.0.2.2" : "localhost";
 
         [ObservableProperty]
         private string _sqlDatabase = "SDNet";
@@ -48,13 +48,19 @@ namespace SDNet.PageModels
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                ErrorMessage = "Введите пароль.";
+                return;
+            }
+
             IsBusy = true;
             ErrorMessage = string.Empty;
             try
             {
-                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, Login);
+                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, Login, Password);
                 UserInfo user = await _currentUserContext.AuthorizeAsync(Login, Password);
-                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, user.UserName);
+                SqlConnectionContext.Initialize(SqlServer, SqlDatabase, user.UserName, Password);
                 _appNavigationService.RequestOpenShell();
             }
             catch (Exception ex)

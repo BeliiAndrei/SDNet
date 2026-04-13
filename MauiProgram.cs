@@ -3,10 +3,16 @@ using Microsoft.Extensions.Logging;
 using SDNet.Services.Auth;
 using SDNet.Services.Export;
 using SDNet.Services.Navigation;
+using SDNet.Services.Notifications;
 using SDNet.Services.ServiceCatalog;
 using SDNet.Services.ServiceProfiles;
 using SDNet.Services.TaskCreation;
+using SDNet.Services.TaskEvents;
+using SDNet.Services.TaskMemento;
+using SDNet.Services.TaskOperations;
+using SDNet.Services.TaskPlanning;
 using SDNet.Services.TaskStatusAudit;
+using SDNet.Services.TaskWorkflow;
 using SDNet.Services.Theming;
 using Syncfusion.Maui.Toolkit.Hosting;
 
@@ -48,15 +54,67 @@ namespace SDNet
             builder.Services.AddSingleton<SDTaskCreator, IntegrationTaskCreator>();
             builder.Services.AddSingleton<ISDTaskFactoryMethodService, SDTaskFactoryMethodService>();
 
+            builder.Services.AddSingleton<TaskState, NewTaskState>();
+            builder.Services.AddSingleton<TaskState, InProgressTaskState>();
+            builder.Services.AddSingleton<TaskState, ApprovalTaskState>();
+            builder.Services.AddSingleton<TaskState, ClosedTaskState>();
+            builder.Services.AddSingleton<ITaskStateFactory, TaskStateFactory>();
+            builder.Services.AddSingleton<ITaskWorkflowService, TaskWorkflowService>();
+
+            builder.Services.AddSingleton<ITaskPlanningStrategy, SecurityTaskPlanningStrategy>();
+            builder.Services.AddSingleton<ITaskPlanningStrategy, IntegrationTaskPlanningStrategy>();
+            builder.Services.AddSingleton<ITaskPlanningStrategy, HardwareTaskPlanningStrategy>();
+            builder.Services.AddSingleton<ITaskPlanningStrategy, DefaultTaskPlanningStrategy>();
+            builder.Services.AddSingleton<ITaskPlanningService, TaskPlanningService>();
+
             builder.Services.AddSingleton<SqlTaskStatusChangeAuditComponent>();
             builder.Services.AddSingleton<TaskStatusChangeAuditComponent>(sp =>
                 new SafeTaskStatusChangeAuditDecorator(
                     new UserContextTaskStatusChangeAuditDecorator(
                         sp.GetRequiredService<SqlTaskStatusChangeAuditComponent>(),
                         sp.GetRequiredService<CurrentUserContext>())));
-            builder.Services.AddSingleton<ITaskStatusChangeHistoryService, SqlTaskStatusChangeHistoryService>();
+            builder.Services.AddSingleton<SqlTaskStatusChangeHistoryService>();
             builder.Services.AddSingleton<SqlSDTaskStore>();
             builder.Services.AddSingleton<ISDTaskStore, DepartmentScopedTaskStoreProxy>();
+
+            builder.Services.AddSingleton<RequiredDescriptionTaskSaveHandler>();
+            builder.Services.AddSingleton<DepartmentAccessTaskSaveHandler>();
+            builder.Services.AddSingleton<PerformerAssignmentTaskSaveHandler>();
+            builder.Services.AddSingleton<DueDateTaskSaveHandler>();
+            builder.Services.AddSingleton<WorkflowTaskSaveHandler>();
+            builder.Services.AddSingleton<CompletionTaskSaveHandler>();
+            builder.Services.AddSingleton<ITaskSaveHandler>(sp =>
+            {
+                ITaskSaveHandler head = sp.GetRequiredService<RequiredDescriptionTaskSaveHandler>();
+                head.SetNext(sp.GetRequiredService<DepartmentAccessTaskSaveHandler>())
+                    .SetNext(sp.GetRequiredService<PerformerAssignmentTaskSaveHandler>())
+                    .SetNext(sp.GetRequiredService<DueDateTaskSaveHandler>())
+                    .SetNext(sp.GetRequiredService<WorkflowTaskSaveHandler>())
+                    .SetNext(sp.GetRequiredService<CompletionTaskSaveHandler>());
+                return head;
+            });
+            builder.Services.AddSingleton<ITaskValidationPipeline, TaskValidationPipeline>();
+            builder.Services.AddSingleton<TaskStatusOriginator>();
+            builder.Services.AddSingleton<ITaskStatusHistoryCaretaker, TaskStatusHistoryCaretaker>();
+
+            builder.Services.AddSingleton<SqlNotificationHistoryService>();
+            builder.Services.AddSingleton<INotificationGateway, MockEmailNotificationGateway>();
+
+            builder.Services.AddSingleton<TaskBoardCacheObserver>();
+            builder.Services.AddSingleton<ITaskBoardReadService>(sp => sp.GetRequiredService<TaskBoardCacheObserver>());
+            builder.Services.AddSingleton<ITaskObserver>(sp => sp.GetRequiredService<TaskBoardCacheObserver>());
+
+            builder.Services.AddSingleton<TaskStatusHistoryCacheObserver>();
+            builder.Services.AddSingleton<ITaskStatusChangeHistoryService>(sp => sp.GetRequiredService<TaskStatusHistoryCacheObserver>());
+            builder.Services.AddSingleton<ITaskObserver>(sp => sp.GetRequiredService<TaskStatusHistoryCacheObserver>());
+
+            builder.Services.AddSingleton<TaskNotificationObserver>();
+            builder.Services.AddSingleton<INotificationHistoryService>(sp => sp.GetRequiredService<TaskNotificationObserver>());
+            builder.Services.AddSingleton<ITaskObserver>(sp => sp.GetRequiredService<TaskNotificationObserver>());
+
+            builder.Services.AddSingleton<ITaskEventSubject, TaskEventSubject>();
+            builder.Services.AddSingleton<ITaskApplicationService, TaskApplicationService>();
+
             builder.Services.AddSingleton<ITaskReferenceDataService, SqlTaskReferenceDataService>();
             builder.Services.AddSingleton<ITaskExportService, TaskExportBridgeService>();
             builder.Services.AddSingleton<IReferenceCatalogAdminService, SqlReferenceCatalogAdminService>();
@@ -78,14 +136,20 @@ namespace SDNet
             builder.Services.AddTransient<LoginPageModel>();
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddSingleton<TaskListPageModel>();
+            builder.Services.AddSingleton<OperationsDashboardPageModel>();
+            builder.Services.AddSingleton<MyAssignmentsPageModel>();
             builder.Services.AddSingleton<SettingsPageModel>();
             builder.Services.AddSingleton<ManageUsersPageModel>();
             builder.Services.AddSingleton<ManageReferencesPageModel>();
             builder.Services.AddSingleton<ServiceCatalogPageModel>();
             builder.Services.AddSingleton<TaskStatusHistoryPageModel>();
+            builder.Services.AddSingleton<NotificationHistoryPageModel>();
             builder.Services.AddSingleton<ManageReferencesPage>();
+            builder.Services.AddSingleton<OperationsDashboardPage>();
+            builder.Services.AddSingleton<MyAssignmentsPage>();
             builder.Services.AddSingleton<ServiceCatalogPage>();
             builder.Services.AddSingleton<TaskStatusHistoryPage>();
+            builder.Services.AddSingleton<NotificationHistoryPage>();
             builder.Services.AddTransient<TaskEditorPageModel>();
 
             builder.Services.AddTransientWithShellRoute<TaskEditorPage, TaskEditorPageModel>("sdtask-edit");

@@ -8,7 +8,11 @@ namespace SDNet.Models
 
         public int UserQueryId { get; set; }
 
+        public int OldStateId { get; set; }
+
         public string OldStateName { get; set; } = string.Empty;
+
+        public int NewStateId { get; set; }
 
         public string NewStateName { get; set; } = string.Empty;
 

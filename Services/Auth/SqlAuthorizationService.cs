@@ -23,6 +23,11 @@ namespace SDNet.Services.Auth
                 throw new InvalidOperationException("Подключение к SQL Server не инициализировано.");
             }
 
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new UnauthorizedAccessException("Введите пароль.");
+            }
+
             await using var connection = new SqlConnection(SqlConnectionContext.Instance.ConnectionString);
             await connection.OpenAsync(cancellationToken);
 

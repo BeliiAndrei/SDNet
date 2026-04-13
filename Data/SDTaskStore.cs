@@ -61,7 +61,7 @@ namespace SDNet.Data
                 clone.Id = Guid.NewGuid();
                 clone.UserQueryId = PeekNextUserQueryIdInternal();
                 clone.DateReg = DateTime.Now;
-                clone.StateName = "Новая";
+                clone.StateId = (int)TaskStateCode.New;
                 clone.DateClosed = null;
                 clone.PerformPercent = 0;
                 clone.ShortDescription = $"{original.ShortDescription} (копия)";
@@ -138,13 +138,15 @@ namespace SDNet.Data
                 }
 
                 if (existingTask is not null &&
-                    !string.Equals(existingTask.StateName, task.StateName, StringComparison.OrdinalIgnoreCase))
+                    existingTask.StateId != task.StateId)
                 {
                     auditRecord = new TaskStatusChangeAuditRecord
                     {
                         TaskId = task.Id,
                         UserQueryId = task.UserQueryId,
+                        OldStateId = existingTask.StateId,
                         OldStateName = existingTask.StateName,
+                        NewStateId = task.StateId,
                         NewStateName = task.StateName
                     };
                 }
@@ -200,7 +202,7 @@ namespace SDNet.Data
             task.QueryTypeName = "Запрос на обслуживание";
             task.ItProjectName = "SDNet";
             task.ShortDescription = "";
-            task.StateName = "Новая";
+            task.StateId = (int)TaskStateCode.New;
             task.DateNeedClose = now.AddDays(2);
             task.PerformerName = "Не назначен";
             task.PerformerDepartName = "Service Desk";

@@ -1,10 +1,11 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SDNet.Data;
 using SDNet.Models;
 using SDNet.Services;
 using SDNet.Services.Export;
+using SDNet.Services.TaskEvents;
+using SDNet.Services.TaskOperations;
 
 namespace SDNet.PageModels
 {
@@ -12,7 +13,8 @@ namespace SDNet.PageModels
     {
         private const string AllOption = "Все";
 
-        private readonly ISDTaskStore _taskStore;
+        private readonly ITaskBoardReadService _taskBoardReadService;
+        private readonly ITaskApplicationService _taskApplicationService;
         private readonly CurrentUserContext _currentUserContext;
         private readonly ITaskReferenceDataService _taskReferenceDataService;
         private readonly ITaskExportService _taskExportService;
@@ -70,12 +72,14 @@ namespace SDNet.PageModels
             $"Всего: {TotalCount} | В работе: {InWorkCount} | Просрочено: {OverdueCount} | Закрыто: {ClosedCount}";
 
         public TaskListPageModel(
-            ISDTaskStore taskStore,
+            ITaskBoardReadService taskBoardReadService,
+            ITaskApplicationService taskApplicationService,
             CurrentUserContext currentUserContext,
             ITaskReferenceDataService taskReferenceDataService,
             ITaskExportService taskExportService)
         {
-            _taskStore = taskStore;
+            _taskBoardReadService = taskBoardReadService;
+            _taskApplicationService = taskApplicationService;
             _currentUserContext = currentUserContext;
             _taskReferenceDataService = taskReferenceDataService;
             _taskExportService = taskExportService;
@@ -87,7 +91,7 @@ namespace SDNet.PageModels
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.TryGetValue("focusId", out var focusObj) &&
-                Guid.TryParse(focusObj?.ToString(), out var focusId))
+                Guid.TryParse(focusObj?.ToString(), out Guid focusId))
             {
                 _pendingFocusId = focusId;
             }
@@ -135,17 +139,40 @@ namespace SDNet.PageModels
         [RelayCommand]
         private async Task CloneTask(SDTask task)
         {
-            try
+            TaskOperationResult result = _taskApplicationService.Clone(task.Id, _currentUserContext.CurrentUser, out SDTask? clone);
+            if (!result.IsSuccessful)
             {
-                SDTask clone = _taskStore.Clone(task.Id);
-                ApplyFiltersCore();
+                await AppShell.DisplaySnackbarAsync(result.Message);
+                return;
+            }
+
+            ApplyFiltersCore();
+            if (clone is not null)
+            {
                 FocusOnTask(clone.Id);
                 await AppShell.DisplaySnackbarAsync($"Скопирована задача №{clone.UserQueryId}");
             }
-            catch (UnauthorizedAccessException ex)
+        }
+
+        [RelayCommand]
+        private async Task UndoLastChange()
+        {
+            if (SelectedTask is null)
             {
-                await AppShell.DisplaySnackbarAsync(ex.Message);
+                await AppShell.DisplaySnackbarAsync("Сначала выберите задачу.");
+                return;
             }
+
+            TaskOperationResult result = _taskApplicationService.UndoLastStatusChange(SelectedTask.Id, _currentUserContext.CurrentUser);
+            if (!result.IsSuccessful)
+            {
+                await AppShell.DisplaySnackbarAsync(result.Message);
+                return;
+            }
+
+            ApplyFiltersCore();
+            FocusOnTask(SelectedTask.Id);
+            await AppShell.DisplaySnackbarAsync("Последнее изменение статуса отменено.");
         }
 
         [RelayCommand]
@@ -174,31 +201,31 @@ namespace SDNet.PageModels
 
         private void ApplyFiltersCore()
         {
-            IEnumerable<SDTask> query = _taskStore.GetAll();
+            IEnumerable<SDTask> query = _taskBoardReadService.GetAll();
 
             if (int.TryParse(QueryIdFilter, out int taskId))
             {
-                query = query.Where(t => t.UserQueryId == taskId);
+                query = query.Where(task => task.UserQueryId == taskId);
             }
 
             if (!string.IsNullOrWhiteSpace(SelectedDepartment) && SelectedDepartment != AllOption)
             {
-                query = query.Where(t =>
-                    string.Equals(t.UserDepartName, SelectedDepartment, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(t.PerformerDepartName, SelectedDepartment, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(task =>
+                    string.Equals(task.UserDepartName, SelectedDepartment, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(task.PerformerDepartName, SelectedDepartment, StringComparison.OrdinalIgnoreCase));
             }
 
             if (!string.IsNullOrWhiteSpace(SelectedQueryType) && SelectedQueryType != AllOption)
             {
-                query = query.Where(t =>
-                    string.Equals(t.QueryTypeName, SelectedQueryType, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(task =>
+                    string.Equals(task.QueryTypeName, SelectedQueryType, StringComparison.OrdinalIgnoreCase));
             }
 
             DateTime start = DateFrom.Date;
             DateTime end = DateTo.Date;
             if (start <= end)
             {
-                query = query.Where(t => t.DateReg.Date >= start && t.DateReg.Date <= end);
+                query = query.Where(task => task.DateReg.Date >= start && task.DateReg.Date <= end);
             }
 
             List<SDTask> result = query.ToList();
@@ -221,7 +248,7 @@ namespace SDNet.PageModels
                     continue;
                 }
 
-                if (!Departments.Any(d => string.Equals(d, department, StringComparison.OrdinalIgnoreCase)))
+                if (!Departments.Any(item => string.Equals(item, department, StringComparison.OrdinalIgnoreCase)))
                 {
                     Departments.Add(department);
                 }
@@ -236,17 +263,17 @@ namespace SDNet.PageModels
                     continue;
                 }
 
-                if (!QueryTypes.Any(q => string.Equals(q, queryType, StringComparison.OrdinalIgnoreCase)))
+                if (!QueryTypes.Any(item => string.Equals(item, queryType, StringComparison.OrdinalIgnoreCase)))
                 {
                     QueryTypes.Add(queryType);
                 }
             }
 
-            SelectedDepartment = Departments.Any(d => string.Equals(d, previousDepartment, StringComparison.OrdinalIgnoreCase))
+            SelectedDepartment = Departments.Any(item => string.Equals(item, previousDepartment, StringComparison.OrdinalIgnoreCase))
                 ? previousDepartment
                 : AllOption;
 
-            SelectedQueryType = QueryTypes.Any(q => string.Equals(q, previousQueryType, StringComparison.OrdinalIgnoreCase))
+            SelectedQueryType = QueryTypes.Any(item => string.Equals(item, previousQueryType, StringComparison.OrdinalIgnoreCase))
                 ? previousQueryType
                 : AllOption;
         }
@@ -262,7 +289,7 @@ namespace SDNet.PageModels
 
         private void FocusOnTask(Guid taskId)
         {
-            SDTask? task = FilteredTasks.FirstOrDefault(t => t.Id == taskId);
+            SDTask? task = FilteredTasks.FirstOrDefault(item => item.Id == taskId);
             if (task is null)
             {
                 return;
@@ -278,9 +305,9 @@ namespace SDNet.PageModels
             DateTime today = DateTime.Today;
 
             TotalCount = tasks.Count;
-            ClosedCount = tasks.Count(t => t.DateClosed.HasValue);
-            InWorkCount = tasks.Count(t => !t.DateClosed.HasValue);
-            OverdueCount = tasks.Count(t => !t.DateClosed.HasValue && t.DateNeedClose.Date < today);
+            ClosedCount = tasks.Count(task => task.DateClosed.HasValue);
+            InWorkCount = tasks.Count(task => !task.DateClosed.HasValue);
+            OverdueCount = tasks.Count(task => !task.DateClosed.HasValue && task.DateNeedClose.Date < today);
         }
 
         private async Task ExportSelectedTaskAsync(ExportFormat format)

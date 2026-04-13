@@ -51,10 +51,25 @@
                             SelectedItem="{Binding Priority}" />
                 </sf:SfTextInputLayout>
                 <sf:SfTextInputLayout Grid.Column="1" Hint="Состояние">
-                    <Picker ItemsSource="{Binding States}"
-                            SelectedItem="{Binding StateName}" />
+                    <Picker ItemsSource="{Binding StateOptions}"
+                            SelectedItem="{Binding SelectedStateOption}" />
                 </sf:SfTextInputLayout>
             </Grid>
+
+            <Border>
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="{StaticResource LayoutSpacing}">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Планирование SLA"
+                               Style="{StaticResource Body2Strong}" />
+                        <Label Text="{Binding PlanningNote}"
+                               Style="{StaticResource Caption1}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1"
+                            Text="Рассчитать"
+                            Command="{Binding ApplyPlanningCommand}" />
+                </Grid>
+            </Border>
 
             <Grid ColumnDefinitions="*,*"
                   ColumnSpacing="{StaticResource LayoutSpacing}">
@@ -198,6 +213,9 @@
                         Text="Отмена"
                         Command="{Binding CancelCommand}" />
             </Grid>
+
+            <Label Text="{Binding StatusMessage}"
+                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

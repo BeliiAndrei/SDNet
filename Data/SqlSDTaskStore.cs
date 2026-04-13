@@ -73,7 +73,7 @@ namespace SDNet.Data
             clone.Id = Guid.Empty;
             clone.UserQueryId = 0;
             clone.DateReg = DateTime.Now;
-            clone.StateName = "Новая";
+            clone.StateId = (int)TaskStateCode.New;
             clone.DateClosed = null;
             clone.PerformPercent = 0;
             clone.ShortDescription = $"{original.ShortDescription} (Копия)";
@@ -158,7 +158,7 @@ namespace SDNet.Data
             command.Parameters.Add(new SqlParameter("@QueryTypeName", DbValue(task.QueryTypeName)));
             command.Parameters.Add(new SqlParameter("@ItProjectName", DbValue(task.ItProjectName)));
             command.Parameters.Add(new SqlParameter("@ShortDescription", DbValue(task.ShortDescription)));
-            command.Parameters.Add(new SqlParameter("@StateName", DbValue(task.StateName)));
+            command.Parameters.Add(new SqlParameter("@StateId", task.StateId));
             command.Parameters.Add(new SqlParameter("@DateNeedClose", task.DateNeedClose == default ? DBNull.Value : task.DateNeedClose));
             command.Parameters.Add(new SqlParameter("@PerformerName", DbValue(task.PerformerName)));
             command.Parameters.Add(new SqlParameter("@PerformerDepartName", DbValue(task.PerformerDepartName)));
@@ -192,13 +192,15 @@ namespace SDNet.Data
             }
 
             if (existingTask is not null &&
-                !string.Equals(existingTask.StateName, task.StateName, StringComparison.OrdinalIgnoreCase))
+                existingTask.StateId != task.StateId)
             {
                 _taskStatusChangeAuditComponent.Save(new TaskStatusChangeAuditRecord
                 {
                     TaskId = task.Id,
                     UserQueryId = task.UserQueryId,
+                    OldStateId = existingTask.StateId,
                     OldStateName = existingTask.StateName,
+                    NewStateId = task.StateId,
                     NewStateName = task.StateName
                 });
             }
@@ -277,6 +279,7 @@ namespace SDNet.Data
             task.QueryTypeName = reader.AsString("QueryTypeName");
             task.ItProjectName = reader.AsString("ItProjectName");
             task.ShortDescription = reader.AsString("ShortDescription");
+            task.StateId = reader.AsInt("StateId");
             task.StateName = reader.AsString("StateName");
             task.DateNeedClose = reader.AsDateTime("DateNeedClose", DateTime.MinValue);
             task.PerformerName = reader.AsString("PerformerName");
@@ -348,7 +351,7 @@ namespace SDNet.Data
             task.QueryTypeName = "Р—Р°РїСЂРѕСЃ РЅР° РѕР±СЃР»СѓР¶РёРІР°РЅРёРµ";
             task.ItProjectName = "SDNet";
             task.ShortDescription = "РќРѕРІР°СЏ Р·Р°РґР°С‡Р°";
-            task.StateName = "РќРѕРІР°СЏ";
+            task.StateId = (int)TaskStateCode.New;
             task.DateNeedClose = now.AddDays(2);
             task.PerformerName = "РќРµ РЅР°Р·РЅР°С‡РµРЅ";
             task.PerformerDepartName = "Service Desk";

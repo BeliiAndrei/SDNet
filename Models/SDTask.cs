@@ -2,6 +2,9 @@ namespace SDNet.Models
 {
     public abstract class SDTask : ICloneable
     {
+        private int _stateId = (int)TaskStateCode.New;
+        private string _stateName = TaskStateCatalog.GetName(TaskStateCode.New);
+
         public Guid Id { get; set; } = Guid.NewGuid();
         public int UserQueryId { get; set; }
         public DateTime DateReg { get; set; }
@@ -12,7 +15,28 @@ namespace SDNet.Models
         public string QueryTypeName { get; set; } = string.Empty;
         public string ItProjectName { get; set; } = string.Empty;
         public string ShortDescription { get; set; } = string.Empty;
-        public string StateName { get; set; } = string.Empty;
+        public int StateId
+        {
+            get => _stateId;
+            set
+            {
+                TaskStateCode normalized = TaskStateCatalog.Normalize(value);
+                _stateId = (int)normalized;
+                _stateName = TaskStateCatalog.GetName(normalized);
+            }
+        }
+
+        public string StateName
+        {
+            get => _stateName;
+            set
+            {
+                TaskStateCode normalized = TaskStateCatalog.Normalize(value);
+                _stateId = (int)normalized;
+                _stateName = TaskStateCatalog.GetName(normalized);
+            }
+        }
+
         public DateTime DateNeedClose { get; set; }
         public string PerformerName { get; set; } = string.Empty;
         public string PerformerDepartName { get; set; } = string.Empty;
@@ -36,7 +60,7 @@ namespace SDNet.Models
             target.QueryTypeName = QueryTypeName;
             target.ItProjectName = ItProjectName;
             target.ShortDescription = ShortDescription;
-            target.StateName = StateName;
+            target.StateId = StateId;
             target.DateNeedClose = DateNeedClose;
             target.PerformerName = PerformerName;
             target.PerformerDepartName = PerformerDepartName;

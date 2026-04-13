@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.MyAssignmentsPage"
+             x:DataType="pageModels:MyAssignmentsPageModel"
+             x:Name="MyAssignmentsRoot"
+             Title="Мои назначения">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference MyAssignmentsRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <VerticalStackLayout Padding="{StaticResource LayoutPadding}" Spacing="{StaticResource LayoutSpacing}">
+        <Button Text="Обновить" Command="{Binding ReloadCommand}" />
+        <Label Text="{Binding Summary}" Style="{StaticResource Body2Strong}" />
+        <CollectionView ItemsSource="{Binding AssignedTasks}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SDTask">
+                    <Border Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Label Text="{Binding UserQueryId}" Style="{StaticResource Body2Strong}" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label Text="{Binding ShortDescription}" Style="{StaticResource Body2Strong}" />
+                                <Label Text="{Binding StateName, StringFormat='Статус: {0}'}" Style="{StaticResource Caption1}" />
+                                <Label Text="{Binding DateNeedClose, StringFormat='Срок: {0:dd.MM.yyyy}'}" Style="{StaticResource Caption1}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

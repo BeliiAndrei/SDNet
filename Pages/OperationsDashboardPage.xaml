@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pageModels="clr-namespace:SDNet.PageModels"
+             xmlns:models="clr-namespace:SDNet.Models"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="SDNet.Pages.OperationsDashboardPage"
+             x:DataType="pageModels:OperationsDashboardPageModel"
+             x:Name="DashboardRoot"
+             Title="Сводка">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            BindingContext="{Binding Path=BindingContext, Source={x:Reference DashboardRoot}, x:DataType=ContentPage}"
+            EventName="Appearing"
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="{StaticResource LayoutPadding}" Spacing="{StaticResource LayoutSpacing}">
+            <Button Text="Обновить" Command="{Binding ReloadCommand}" />
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="{StaticResource LayoutSpacing}" RowSpacing="{StaticResource LayoutSpacing}">
+                <Border Grid.Row="0" Grid.Column="0"><Label Text="{Binding TotalTasks, StringFormat='Всего задач: {0}'}" Style="{StaticResource Body2Strong}" /></Border>
+                <Border Grid.Row="0" Grid.Column="1"><Label Text="{Binding OverdueTasks, StringFormat='Просрочено: {0}'}" Style="{StaticResource Body2Strong}" /></Border>
+                <Border Grid.Row="1" Grid.Column="0"><Label Text="{Binding ClosedTasks, StringFormat='Закрыто: {0}'}" Style="{StaticResource Body2Strong}" /></Border>
+                <Border Grid.Row="1" Grid.Column="1"><Label Text="{Binding TasksInApproval, StringFormat='На согласовании: {0}'}" Style="{StaticResource Body2Strong}" /></Border>
+            </Grid>
+
+            <Label Text="Последние изменения статусов" Style="{StaticResource Title3}" />
+            <CollectionView ItemsSource="{Binding RecentChanges}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:TaskStatusChangeHistoryItem">
+                        <Border Margin="0,0,0,8">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding UserQueryId, StringFormat='Задача №{0}'}" Style="{StaticResource Body2Strong}" />
+                                <Label Text="{Binding OldStateName, StringFormat='До: {0}'}" Style="{StaticResource Caption1}" />
+                                <Label Text="{Binding NewStateName, StringFormat='После: {0}'}" Style="{StaticResource Caption1}" />
+                                <Label Text="{Binding ChangedAt, StringFormat='Когда: {0:dd.MM.yyyy HH:mm}'}" Style="{StaticResource Caption1}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

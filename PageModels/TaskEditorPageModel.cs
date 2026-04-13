@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SDNet.Data;
@@ -8,30 +8,37 @@ using SDNet.Services;
 using SDNet.Services.Auth;
 using SDNet.Services.ServiceProfiles;
 using SDNet.Services.TaskCreation;
+using SDNet.Services.TaskOperations;
+using SDNet.Services.TaskPlanning;
+using SDNet.Services.TaskWorkflow;
 
 namespace SDNet.PageModels
 {
     public partial class TaskEditorPageModel : ObservableObject, IQueryAttributable
     {
-        private const int AdministratorRoleId = 1;
-
         private readonly ISDTaskStore _taskStore;
         private readonly CurrentUserContext _currentUserContext;
         private readonly IUserDirectoryService _userDirectoryService;
         private readonly ITaskReferenceDataService _taskReferenceDataService;
         private readonly ISDTaskFactoryMethodService _taskFactoryMethodService;
         private readonly IServiceProfileFlyweightFactory _serviceProfileFlyweightFactory;
+        private readonly ITaskApplicationService _taskApplicationService;
+        private readonly ITaskWorkflowService _taskWorkflowService;
+        private readonly ITaskPlanningService _taskPlanningService;
+        private readonly IUserSettingsService _userSettingsService;
+
         private Guid _taskId;
+        private bool _isHydrating;
         private bool _isSyncingServiceProfileSelection;
 
         public IReadOnlyList<string> TaskTypes => _taskFactoryMethodService.SupportedTaskTypes;
         public IReadOnlyList<string> Priorities { get; } = ["Низкий", "Средний", "Высокий", "Критичный"];
-        public IReadOnlyList<string> States { get; } = ["Новая", "В работе", "Согласование", "Закрыта"];
         public ObservableCollection<string> PerformerOptions { get; } = [];
         public ObservableCollection<string> DepartmentOptions { get; } = [];
         public ObservableCollection<string> QueryTypeOptions { get; } = [];
         public ObservableCollection<string> ItProjectOptions { get; } = [];
         public ObservableCollection<ServiceProfileOption> ServiceProfileOptions { get; } = [];
+        public ObservableCollection<TaskStateOption> StateOptions { get; } = [];
 
         [ObservableProperty]
         private bool _isExistingTask;
@@ -76,7 +83,8 @@ namespace SDNet.PageModels
         private ServiceProfileOption? _selectedServiceProfile;
 
         [ObservableProperty]
-        private string _stateName = "Новая";
+        [NotifyPropertyChangedFor(nameof(IsDateClosedVisible))]
+        private TaskStateOption? _selectedStateOption;
 
         [ObservableProperty]
         private DateTime _dateNeedClose = DateTime.Today.AddDays(2);
@@ -96,6 +104,12 @@ namespace SDNet.PageModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsDateClosedVisible))]
         private DateTime _dateClosed = DateTime.Now;
+
+        [ObservableProperty]
+        private string _statusMessage = string.Empty;
+
+        [ObservableProperty]
+        private string _planningNote = string.Empty;
 
         [ObservableProperty]
         private string _itSystemArea = string.Empty;
@@ -139,7 +153,7 @@ namespace SDNet.PageModels
         public bool IsAccessTask => SelectedTaskType == SDTaskTypes.AccessTask;
         public bool IsSecurityTask => SelectedTaskType == SDTaskTypes.SecurityTask;
         public bool IsIntegrationTask => SelectedTaskType == SDTaskTypes.IntegrationTask;
-        public bool IsDateClosedVisible => StateName == "Закрыта";
+        public bool IsDateClosedVisible => SelectedStateOption?.Code == TaskStateCode.Closed;
 
         public TaskEditorPageModel(
             ISDTaskStore taskStore,
@@ -147,7 +161,11 @@ namespace SDNet.PageModels
             IUserDirectoryService userDirectoryService,
             ITaskReferenceDataService taskReferenceDataService,
             ISDTaskFactoryMethodService taskFactoryMethodService,
-            IServiceProfileFlyweightFactory serviceProfileFlyweightFactory)
+            IServiceProfileFlyweightFactory serviceProfileFlyweightFactory,
+            ITaskApplicationService taskApplicationService,
+            ITaskWorkflowService taskWorkflowService,
+            ITaskPlanningService taskPlanningService,
+            IUserSettingsService userSettingsService)
         {
             _taskStore = taskStore;
             _currentUserContext = currentUserContext;
@@ -155,16 +173,29 @@ namespace SDNet.PageModels
             _taskReferenceDataService = taskReferenceDataService;
             _taskFactoryMethodService = taskFactoryMethodService;
             _serviceProfileFlyweightFactory = serviceProfileFlyweightFactory;
+            _taskApplicationService = taskApplicationService;
+            _taskWorkflowService = taskWorkflowService;
+            _taskPlanningService = taskPlanningService;
+            _userSettingsService = userSettingsService;
+
             FillDefaults();
         }
 
-        partial void OnStateNameChanged(string value)
+        partial void OnSelectedTaskTypeChanged(string value)
         {
-            OnPropertyChanged(nameof(IsDateClosedVisible));
-            if (value == "Закрыта")
+            OnPropertyChanged(nameof(IsITTask));
+            OnPropertyChanged(nameof(IsHardwareTask));
+            OnPropertyChanged(nameof(IsCommunicationTask));
+            OnPropertyChanged(nameof(IsAccessTask));
+            OnPropertyChanged(nameof(IsSecurityTask));
+            OnPropertyChanged(nameof(IsIntegrationTask));
+
+            if (_isHydrating)
             {
-                DateClosed = DateTime.Now;
+                return;
             }
+
+            ApplyPlanningCore();
         }
 
         partial void OnSelectedPerformerChanged(string value)
@@ -180,7 +211,7 @@ namespace SDNet.PageModels
 
         partial void OnSelectedServiceProfileChanged(ServiceProfileOption? value)
         {
-            if (_isSyncingServiceProfileSelection || value?.Id is null)
+            if (_isHydrating || _isSyncingServiceProfileSelection || value?.Id is null)
             {
                 return;
             }
@@ -194,12 +225,22 @@ namespace SDNet.PageModels
             ServiceProfileTaskContext context = CaptureServiceProfileContext();
             flyweight.ApplyTo(context);
             ApplyServiceProfileContext(context);
+            ApplyPlanningCore();
+        }
+
+        partial void OnSelectedStateOptionChanged(TaskStateOption? value)
+        {
+            OnPropertyChanged(nameof(IsDateClosedVisible));
+            if (value?.Code == TaskStateCode.Closed)
+            {
+                DateClosed = DateTime.Now;
+            }
         }
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             bool isNew = query.TryGetValue("isNew", out var isNewValue) &&
-                         bool.TryParse(isNewValue?.ToString(), out var parsed) &&
+                         bool.TryParse(isNewValue?.ToString(), out bool parsed) &&
                          parsed;
             int? requestedServiceProfileId = TryParseServiceProfileId(query);
 
@@ -231,7 +272,7 @@ namespace SDNet.PageModels
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    AppShell.DisplaySnackbarAsync(ex.Message).FireAndForgetSafeAsync();
+                    ShowMessage(ex.Message);
                     Shell.Current.GoToAsync("..").FireAndForgetSafeAsync();
                     FillDefaults();
                     IsExistingTask = false;
@@ -244,13 +285,16 @@ namespace SDNet.PageModels
         }
 
         [RelayCommand]
+        private async Task ApplyPlanning()
+        {
+            ApplyPlanningCore();
+            await AppShell.DisplaySnackbarAsync(PlanningNote);
+        }
+
+        [RelayCommand]
         private async Task Save()
         {
-            if (string.IsNullOrWhiteSpace(ShortDescription))
-            {
-                await AppShell.DisplaySnackbarAsync("Заполните краткое описание задачи.");
-                return;
-            }
+            StatusMessage = string.Empty;
 
             UserInfo? currentUser = _currentUserContext.CurrentUser;
             if (currentUser is not null && !IsAdministrator(currentUser))
@@ -258,22 +302,12 @@ namespace SDNet.PageModels
                 UserDepartName = currentUser.UserDepartName;
             }
 
-            UserInfo? selectedPerformerUser = _userDirectoryService.GetByFullName(SelectedPerformer);
-            if (currentUser is not null &&
-                !IsAdministrator(currentUser) &&
-                selectedPerformerUser is not null &&
-                IsAdministrator(selectedPerformerUser))
-            {
-                await AppShell.DisplaySnackbarAsync("Пользователь с ролью User не может назначать задачу администратору.");
-                return;
-            }
-
             if (!IsExistingTask && !string.IsNullOrWhiteSpace(currentUser?.UserFullName))
             {
                 UserFio = currentUser.UserFullName;
             }
 
-            var task = _taskFactoryMethodService.CreateTask(SelectedTaskType);
+            SDTask task = _taskFactoryMethodService.CreateTask(SelectedTaskType);
             task.Id = _taskId == Guid.Empty ? Guid.NewGuid() : _taskId;
             task.UserQueryId = UserQueryId;
             task.DateReg = DateReg;
@@ -284,27 +318,29 @@ namespace SDNet.PageModels
             task.QueryTypeName = QueryTypeName;
             task.ItProjectName = ItProjectName;
             task.ShortDescription = ShortDescription;
-            task.StateName = StateName;
+            task.StateId = (int)(SelectedStateOption?.Code ?? TaskStateCode.New);
             task.DateNeedClose = DateNeedClose;
-            task.PerformerName = selectedPerformerUser?.UserFullName ?? PerformerName;
+
+            UserInfo? selectedPerformerUser = _userDirectoryService.GetByFullName(SelectedPerformer);
+            task.PerformerName = selectedPerformerUser?.UserFullName ?? SelectedPerformer;
             task.PerformerDepartName = selectedPerformerUser?.UserDepartName ?? PerformerDepartName;
             task.PerformPercent = (int)Math.Round(PerformPercent);
-            task.DateClosed = StateName == "Закрыта" ? DateClosed : null;
+            task.DateClosed = SelectedStateOption?.Code == TaskStateCode.Closed ? DateClosed : null;
             task.ServiceProfileId = SelectedServiceProfile?.Id;
 
             ApplyTypeSpecific(task);
-            try
-            {
-                _taskStore.Save(task);
-                _taskId = task.Id;
-                IsExistingTask = true;
 
-                await Shell.Current.GoToAsync($"..?refresh=true&focusId={task.Id}");
-            }
-            catch (UnauthorizedAccessException ex)
+            TaskOperationResult result = _taskApplicationService.Save(task, currentUser);
+            if (!result.IsSuccessful)
             {
-                await AppShell.DisplaySnackbarAsync(ex.Message);
+                await ShowMessageAsync(result.Message);
+                return;
             }
+
+            _taskId = task.Id;
+            IsExistingTask = true;
+            StatusMessage = "Задача сохранена.";
+            await Shell.Current.GoToAsync($"..?refresh=true&focusId={task.Id}");
         }
 
         [RelayCommand]
@@ -316,146 +352,136 @@ namespace SDNet.PageModels
                 return;
             }
 
-            try
+            UserSettings settings = await _userSettingsService.LoadAsync();
+            if (settings.ConfirmBeforeDelete && Shell.Current is not null)
             {
-                _taskStore.Delete(_taskId);
-                await Shell.Current.GoToAsync("..?refresh=true");
+                bool confirmed = await Shell.Current.DisplayAlert(
+                    "Подтверждение удаления",
+                    "Удалить текущую задачу?",
+                    "Удалить",
+                    "Отмена");
+
+                if (!confirmed)
+                {
+                    return;
+                }
             }
-            catch (UnauthorizedAccessException ex)
+
+            TaskOperationResult result = _taskApplicationService.Delete(_taskId, _currentUserContext.CurrentUser);
+            if (!result.IsSuccessful)
             {
-                await AppShell.DisplaySnackbarAsync(ex.Message);
+                await ShowMessageAsync(result.Message);
+                return;
+            }
+
+            if (Shell.Current is not null)
+            {
+                await Shell.Current.GoToAsync("..?refresh=true");
             }
         }
 
         [RelayCommand]
         private Task Cancel()
         {
-            return Shell.Current.GoToAsync("..");
+            return Shell.Current is null
+                ? Task.CompletedTask
+                : Shell.Current.GoToAsync("..");
         }
 
         private void FillDefaults()
         {
-            _taskId = Guid.Empty;
-            UserInfo? currentUser = _currentUserContext.CurrentUser;
-            LoadReferenceOptions();
-            LoadServiceProfileOptions();
-            EnsureOption(DepartmentOptions, currentUser?.UserDepartName);
-
-            SelectedTaskType = SDTaskTypes.ITTask;
-            UserQueryId = _taskStore.PeekNextUserQueryId();
-            DateReg = DateTime.Now;
-            Priority = "Средний";
-            UserFio = currentUser?.UserFullName ?? string.Empty;
-            UserDepartName = ChooseOption(DepartmentOptions, currentUser?.UserDepartName);
-            UserQueryTag = "NEW";
-            QueryTypeName = ChooseOption(QueryTypeOptions, "Запрос на обслуживание");
-            ItProjectName = ChooseOption(ItProjectOptions, "SDNet");
-            ShortDescription = string.Empty;
-            StateName = "Новая";
-            DateNeedClose = DateTime.Today.AddDays(2);
-            PerformerName = string.Empty;
-            PerformerDepartName = currentUser?.UserDepartName ?? "Service Desk";
-            PerformPercent = 0;
-            DateClosed = DateTime.Now;
-            ItSystemArea = string.Empty;
-            ItRequiresDeployment = false;
-            HardwareModel = string.Empty;
-            HardwareAssetNumber = string.Empty;
-            CommunicationChannel = string.Empty;
-            CommunicationContact = string.Empty;
-            AccessRole = string.Empty;
-            AccessResource = string.Empty;
-            SecurityRiskLevel = string.Empty;
-            SecurityRequiresAudit = false;
-            IntegrationEndpoint = string.Empty;
-            IntegrationSystem = string.Empty;
-
-            LoadPerformerOptions();
-
-            if (currentUser is not null &&
-                PerformerOptions.Any(p => string.Equals(p, currentUser.UserFullName, StringComparison.OrdinalIgnoreCase)))
+            _isHydrating = true;
+            try
             {
-                SelectedPerformer = currentUser.UserFullName;
+                _taskId = Guid.Empty;
+                UserInfo? currentUser = _currentUserContext.CurrentUser;
+
+                LoadReferenceOptions();
+                LoadServiceProfileOptions();
+                EnsureOption(DepartmentOptions, currentUser?.UserDepartName);
+
+                SelectedTaskType = SDTaskTypes.ITTask;
+                UserQueryId = _taskStore.PeekNextUserQueryId();
+                DateReg = DateTime.Now;
+                Priority = "Средний";
+                UserFio = currentUser?.UserFullName ?? string.Empty;
+                UserDepartName = ChooseOption(DepartmentOptions, currentUser?.UserDepartName);
+                UserQueryTag = "NEW";
+                QueryTypeName = ChooseOption(QueryTypeOptions, "Запрос на обслуживание");
+                ItProjectName = ChooseOption(ItProjectOptions, "SDNet");
+                ShortDescription = string.Empty;
+                DateNeedClose = DateTime.Today.AddDays(2);
+                PerformerName = string.Empty;
+                PerformerDepartName = currentUser?.UserDepartName ?? "Service Desk";
+                PerformPercent = 0;
+                DateClosed = DateTime.Now;
+                StatusMessage = string.Empty;
+                PlanningNote = string.Empty;
+
+                ResetTypeSpecificFields();
+                LoadPerformerOptions();
+                SelectedPerformer = PerformerOptions.FirstOrDefault(p =>
+                    string.Equals(p, currentUser?.UserFullName, StringComparison.OrdinalIgnoreCase))
+                    ?? PerformerOptions.FirstOrDefault()
+                    ?? "Не назначен";
+
+                SetSelectedServiceProfile(null);
+                RefreshStateOptions(BuildDraftTask((int)TaskStateCode.New), (int)TaskStateCode.New);
             }
-            else
+            finally
             {
-                SelectedPerformer = PerformerOptions.FirstOrDefault() ?? "Не назначен";
+                _isHydrating = false;
             }
 
-            SetSelectedServiceProfile(null);
+            ApplyPlanningCore();
         }
 
         private void FillFromTask(SDTask task)
         {
-            LoadReferenceOptions();
-            LoadServiceProfileOptions();
-            SelectedTaskType = task.TaskTypeName;
-            UserQueryId = task.UserQueryId;
-            DateReg = task.DateReg;
-            Priority = task.Priority;
-            UserFio = task.UserFio;
-            EnsureOption(DepartmentOptions, task.UserDepartName);
-            UserDepartName = task.UserDepartName;
-            UserQueryTag = task.UserQueryTag;
-            EnsureOption(QueryTypeOptions, task.QueryTypeName);
-            QueryTypeName = task.QueryTypeName;
-            EnsureOption(ItProjectOptions, task.ItProjectName);
-            ItProjectName = task.ItProjectName;
-            ShortDescription = task.ShortDescription;
-            StateName = task.StateName;
-            DateNeedClose = task.DateNeedClose;
-            PerformerName = task.PerformerName;
-            PerformerDepartName = task.PerformerDepartName;
-            PerformPercent = task.PerformPercent;
-            DateClosed = task.DateClosed ?? DateTime.Now;
-
-            ItSystemArea = string.Empty;
-            ItRequiresDeployment = false;
-            HardwareModel = string.Empty;
-            HardwareAssetNumber = string.Empty;
-            CommunicationChannel = string.Empty;
-            CommunicationContact = string.Empty;
-            AccessRole = string.Empty;
-            AccessResource = string.Empty;
-            SecurityRiskLevel = string.Empty;
-            SecurityRequiresAudit = false;
-            IntegrationEndpoint = string.Empty;
-            IntegrationSystem = string.Empty;
-
-            switch (task)
+            _isHydrating = true;
+            try
             {
-                case ITTask itTask:
-                    ItSystemArea = itTask.SystemArea;
-                    ItRequiresDeployment = itTask.RequiresDeployment;
-                    break;
-                case HardwareTask hardwareTask:
-                    HardwareModel = hardwareTask.EquipmentModel;
-                    HardwareAssetNumber = hardwareTask.AssetNumber;
-                    break;
-                case CommunicationTask communicationTask:
-                    CommunicationChannel = communicationTask.Channel;
-                    CommunicationContact = communicationTask.ContactPoint;
-                    break;
-                case AccessTask accessTask:
-                    AccessRole = accessTask.AccessRole;
-                    AccessResource = accessTask.ResourceName;
-                    break;
-                case SecurityTask securityTask:
-                    SecurityRiskLevel = securityTask.RiskLevel;
-                    SecurityRequiresAudit = securityTask.RequiresAudit;
-                    break;
-                case IntegrationTask integrationTask:
-                    IntegrationEndpoint = integrationTask.EndpointName;
-                    IntegrationSystem = integrationTask.IntegrationSystem;
-                    break;
+                LoadReferenceOptions();
+                LoadServiceProfileOptions();
+
+                SelectedTaskType = task.TaskTypeName;
+                UserQueryId = task.UserQueryId;
+                DateReg = task.DateReg;
+                Priority = task.Priority;
+                UserFio = task.UserFio;
+                EnsureOption(DepartmentOptions, task.UserDepartName);
+                UserDepartName = task.UserDepartName;
+                UserQueryTag = task.UserQueryTag;
+                EnsureOption(QueryTypeOptions, task.QueryTypeName);
+                QueryTypeName = task.QueryTypeName;
+                EnsureOption(ItProjectOptions, task.ItProjectName);
+                ItProjectName = task.ItProjectName;
+                ShortDescription = task.ShortDescription;
+                DateNeedClose = task.DateNeedClose;
+                PerformerName = task.PerformerName;
+                PerformerDepartName = task.PerformerDepartName;
+                PerformPercent = task.PerformPercent;
+                DateClosed = task.DateClosed ?? DateTime.Now;
+                StatusMessage = string.Empty;
+
+                ResetTypeSpecificFields();
+                ApplyTypeSpecificFields(task);
+
+                LoadPerformerOptions();
+                SelectedPerformer = PerformerOptions.FirstOrDefault(p =>
+                                        string.Equals(p, task.PerformerName, StringComparison.OrdinalIgnoreCase))
+                                   ?? PerformerOptions.FirstOrDefault()
+                                   ?? task.PerformerName;
+
+                SetSelectedServiceProfile(task.ServiceProfileId);
+                RefreshStateOptions(task, task.StateId);
+            }
+            finally
+            {
+                _isHydrating = false;
             }
 
-            LoadPerformerOptions();
-            SelectedPerformer = PerformerOptions.FirstOrDefault(p =>
-                                    string.Equals(p, task.PerformerName, StringComparison.OrdinalIgnoreCase))
-                               ?? PerformerOptions.FirstOrDefault()
-                               ?? task.PerformerName;
-            SetSelectedServiceProfile(task.ServiceProfileId);
+            ApplyPlanningCore(updateFields: false);
         }
 
         private void LoadReferenceOptions()
@@ -465,56 +491,12 @@ namespace SDNet.PageModels
             PopulateOptions(ItProjectOptions, _taskReferenceDataService.GetItProjects());
         }
 
-        private static void PopulateOptions(
-            ObservableCollection<string> target,
-            IReadOnlyList<string> source)
-        {
-            target.Clear();
-
-            foreach (string value in source.Where(v => !string.IsNullOrWhiteSpace(v)).Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                target.Add(value);
-            }
-        }
-
-        private static void EnsureOption(ObservableCollection<string> options, string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return;
-            }
-
-            if (!options.Any(item => string.Equals(item, value, StringComparison.OrdinalIgnoreCase)))
-            {
-                options.Add(value);
-            }
-        }
-
-        private static string ChooseOption(
-            IEnumerable<string> options,
-            string? preferredValue)
-        {
-            List<string> list = options.ToList();
-
-            if (!string.IsNullOrWhiteSpace(preferredValue))
-            {
-                string? preferredMatch = list.FirstOrDefault(v =>
-                    string.Equals(v, preferredValue, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrWhiteSpace(preferredMatch))
-                {
-                    return preferredMatch;
-                }
-            }
-
-            return list.FirstOrDefault() ?? string.Empty;
-        }
-
         private void LoadPerformerOptions()
         {
             PerformerOptions.Clear();
 
             IReadOnlyList<UserInfo> options = _userDirectoryService.GetAssignableUsers(_currentUserContext.CurrentUser);
-            foreach (UserInfo user in options.OrderBy(u => u.UserFullName))
+            foreach (UserInfo user in options.OrderBy(user => user.UserFullName))
             {
                 PerformerOptions.Add(user.UserFullName);
             }
@@ -563,6 +545,48 @@ namespace SDNet.PageModels
             }
         }
 
+        private void RefreshStateOptions(SDTask task, int selectedStateId)
+        {
+            StateOptions.Clear();
+
+            IReadOnlyList<TaskStateOption> options = _taskWorkflowService.GetAvailableStates(task, _currentUserContext.CurrentUser);
+            foreach (TaskStateOption option in options)
+            {
+                StateOptions.Add(option);
+            }
+
+            SelectedStateOption = StateOptions.FirstOrDefault(option => (int)option.Code == selectedStateId)
+                                  ?? StateOptions.FirstOrDefault()
+                                  ?? new TaskStateOption(TaskStateCode.New, TaskStateCatalog.GetName(TaskStateCode.New));
+        }
+
+        private void ApplyPlanningCore(bool updateFields = true)
+        {
+            TaskPlanningResult plan = _taskPlanningService.BuildPlan(new TaskPlanningRequest
+            {
+                TaskTypeName = SelectedTaskType,
+                RegisteredAt = DateReg == default ? DateTime.Now : DateReg,
+                CurrentPriority = Priority,
+                CurrentPerformerDepartment = PerformerDepartName,
+                CurrentUser = _currentUserContext.CurrentUser
+            });
+
+            PlanningNote = plan.Note;
+            if (!updateFields)
+            {
+                return;
+            }
+
+            if (Priorities.Contains(plan.RecommendedPriority))
+            {
+                Priority = plan.RecommendedPriority;
+            }
+
+            EnsureOption(DepartmentOptions, plan.RecommendedPerformerDepartment);
+            PerformerDepartName = plan.RecommendedPerformerDepartment;
+            DateNeedClose = plan.RecommendedDueDate;
+        }
+
         private ServiceProfileTaskContext CaptureServiceProfileContext()
         {
             return new ServiceProfileTaskContext
@@ -605,19 +629,13 @@ namespace SDNet.PageModels
             DateNeedClose = context.DateNeedClose;
         }
 
-        private static int? TryParseServiceProfileId(IDictionary<string, object> query)
+        private SDTask BuildDraftTask(int stateId)
         {
-            return query.TryGetValue("serviceProfileId", out var value) &&
-                   int.TryParse(value?.ToString(), out int parsedId) &&
-                   parsedId > 0
-                ? parsedId
-                : null;
-        }
-
-        private static bool IsAdministrator(UserInfo user)
-        {
-            return user.UserRoleId == AdministratorRoleId ||
-                   string.Equals(user.UserRoleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+            SDTask task = _taskFactoryMethodService.CreateTask(SelectedTaskType);
+            task.StateId = stateId;
+            task.DateReg = DateReg;
+            task.DateNeedClose = DateNeedClose;
+            return task;
         }
 
         private void ApplyTypeSpecific(SDTask task)
@@ -651,6 +669,116 @@ namespace SDNet.PageModels
             }
         }
 
+        private void ApplyTypeSpecificFields(SDTask task)
+        {
+            switch (task)
+            {
+                case ITTask itTask:
+                    ItSystemArea = itTask.SystemArea;
+                    ItRequiresDeployment = itTask.RequiresDeployment;
+                    break;
+                case HardwareTask hardwareTask:
+                    HardwareModel = hardwareTask.EquipmentModel;
+                    HardwareAssetNumber = hardwareTask.AssetNumber;
+                    break;
+                case CommunicationTask communicationTask:
+                    CommunicationChannel = communicationTask.Channel;
+                    CommunicationContact = communicationTask.ContactPoint;
+                    break;
+                case AccessTask accessTask:
+                    AccessRole = accessTask.AccessRole;
+                    AccessResource = accessTask.ResourceName;
+                    break;
+                case SecurityTask securityTask:
+                    SecurityRiskLevel = securityTask.RiskLevel;
+                    SecurityRequiresAudit = securityTask.RequiresAudit;
+                    break;
+                case IntegrationTask integrationTask:
+                    IntegrationEndpoint = integrationTask.EndpointName;
+                    IntegrationSystem = integrationTask.IntegrationSystem;
+                    break;
+            }
+        }
+
+        private void ResetTypeSpecificFields()
+        {
+            ItSystemArea = string.Empty;
+            ItRequiresDeployment = false;
+            HardwareModel = string.Empty;
+            HardwareAssetNumber = string.Empty;
+            CommunicationChannel = string.Empty;
+            CommunicationContact = string.Empty;
+            AccessRole = string.Empty;
+            AccessResource = string.Empty;
+            SecurityRiskLevel = string.Empty;
+            SecurityRequiresAudit = false;
+            IntegrationEndpoint = string.Empty;
+            IntegrationSystem = string.Empty;
+        }
+
+        private static void PopulateOptions(ObservableCollection<string> target, IReadOnlyList<string> source)
+        {
+            target.Clear();
+            foreach (string value in source.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                target.Add(value);
+            }
+        }
+
+        private static void EnsureOption(ObservableCollection<string> options, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (!options.Any(item => string.Equals(item, value, StringComparison.OrdinalIgnoreCase)))
+            {
+                options.Add(value);
+            }
+        }
+
+        private static string ChooseOption(IEnumerable<string> options, string? preferredValue)
+        {
+            List<string> list = options.ToList();
+            if (!string.IsNullOrWhiteSpace(preferredValue))
+            {
+                string? preferredMatch = list.FirstOrDefault(item =>
+                    string.Equals(item, preferredValue, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(preferredMatch))
+                {
+                    return preferredMatch;
+                }
+            }
+
+            return list.FirstOrDefault() ?? string.Empty;
+        }
+
+        private static int? TryParseServiceProfileId(IDictionary<string, object> query)
+        {
+            return query.TryGetValue("serviceProfileId", out var value) &&
+                   int.TryParse(value?.ToString(), out int parsedId) &&
+                   parsedId > 0
+                ? parsedId
+                : null;
+        }
+
+        private static bool IsAdministrator(UserInfo user)
+        {
+            return user.UserRoleId == 1 ||
+                   string.Equals(user.UserRoleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task ShowMessageAsync(string message)
+        {
+            StatusMessage = message;
+            await AppShell.DisplaySnackbarAsync(message);
+        }
+
+        private void ShowMessage(string message)
+        {
+            StatusMessage = message;
+            AppShell.DisplaySnackbarAsync(message).FireAndForgetSafeAsync();
+        }
     }
 }
-

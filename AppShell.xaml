@@ -15,6 +15,18 @@
         Route="task-list" />
 
     <ShellContent
+        Title="Сводка"
+        Icon="{StaticResource IconDashboard}"
+        ContentTemplate="{DataTemplate pages:OperationsDashboardPage}"
+        Route="operations-dashboard" />
+
+    <ShellContent
+        Title="Мои назначения"
+        Icon="{StaticResource IconProjects}"
+        ContentTemplate="{DataTemplate pages:MyAssignmentsPage}"
+        Route="my-assignments" />
+
+    <ShellContent
         Title="Каталог услуг"
         Icon="{StaticResource IconDashboard}"
         ContentTemplate="{DataTemplate pages:ServiceCatalogPage}"
@@ -49,6 +61,14 @@
         Icon="{StaticResource IconMeta}"
         ContentTemplate="{DataTemplate pages:TaskStatusHistoryPage}"
         Route="admin-task-history" />
+
+    <ShellContent
+        x:Name="AdminNotificationHistoryShellContent"
+        IsVisible="False"
+        Title="История уведомлений"
+        Icon="{StaticResource IconMeta}"
+        ContentTemplate="{DataTemplate pages:NotificationHistoryPage}"
+        Route="admin-notification-history" />
 
     <Shell.FlyoutFooter>
         <Grid Padding="15">

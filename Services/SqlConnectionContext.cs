@@ -33,28 +33,32 @@ namespace SDNet.Services
 
         public string Database { get; private set; } = string.Empty;
 
+        public string SqlLogin { get; private set; } = string.Empty;
+
         public bool IsInitialized => !string.IsNullOrWhiteSpace(ConnectionString);
 
         public DateTime? CreatedAt { get; private set; }
 
-        public static void Initialize(string server, string database, string appUserName)
+        public static void Initialize(string server, string database, string sqlLogin, string sqlPassword)
         {
             SqlConnectionContext instance = GetInstance();
-            instance.InitializeInternal(server, database, appUserName);
+            instance.InitializeInternal(server, database, sqlLogin, sqlPassword);
         }
 
-        private void InitializeInternal(string server, string database, string appUserName)
+        private void InitializeInternal(string server, string database, string sqlLogin, string sqlPassword)
         {
             lock (_sync)
             {
                 string safeServer = string.IsNullOrWhiteSpace(server) ? "localhost" : server.Trim();
                 string safeDatabase = string.IsNullOrWhiteSpace(database) ? "SDNet" : database.Trim();
-                string safeUser = string.IsNullOrWhiteSpace(appUserName) ? "anonymous" : appUserName.Trim();
+                string safeUser = string.IsNullOrWhiteSpace(sqlLogin) ? "sdnet_app" : sqlLogin.Trim();
+                string safePassword = string.IsNullOrWhiteSpace(sqlPassword) ? "sdnet123" : sqlPassword;
 
                 Server = safeServer;
                 Database = safeDatabase;
+                SqlLogin = safeUser;
                 ConnectionString =
-                    $"Server={safeServer};Database={safeDatabase};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=30;Application Name=SDNet[{safeUser}];";
+                    $"Server={safeServer};Database={safeDatabase};User ID={safeUser};Password={safePassword};TrustServerCertificate=True;Encrypt=False;Connect Timeout=30;Application Name=SDNet[{safeUser}];";
                 CreatedAt = DateTime.Now;
             }
         }

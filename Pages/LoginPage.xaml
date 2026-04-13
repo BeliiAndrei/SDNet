@@ -10,6 +10,10 @@
         <VerticalStackLayout Spacing="{StaticResource LayoutSpacing}" VerticalOptions="Center">
             <Label Text="SDNet" Style="{StaticResource Title1}" HorizontalOptions="Center" />
             <Label Text="Вход в систему" Style="{StaticResource Body1Strong}" HorizontalOptions="Center" />
+            <Label Text="Используется SQL Server Auth: логин и пароль должны совпадать с SQL login."
+                   Style="{StaticResource Caption1}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
 
             <Border>
                 <VerticalStackLayout Spacing="{StaticResource size120}">

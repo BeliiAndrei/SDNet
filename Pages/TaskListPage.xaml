@@ -25,7 +25,7 @@
         RowDefinitions="Auto,Auto,*,Auto"
         RowSpacing="{StaticResource LayoutSpacing}">
 
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="{StaticResource LayoutSpacing}">
             <Label Grid.Column="0"
                    VerticalOptions="Center"
                    Text="Управление задачами"
@@ -33,11 +33,16 @@
 
             <Button
                 Grid.Column="1"
+                Text="Отменить изменение"
+                Command="{Binding UndoLastChangeCommand}" />
+
+            <Button
+                Grid.Column="2"
                 Text="Обновить"
                 Command="{Binding ApplyFiltersCommand}" />
 
             <Button
-                Grid.Column="2"
+                Grid.Column="3"
                 WidthRequest="44"
                 HeightRequest="44"
                 Padding="0"
